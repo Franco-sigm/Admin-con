@@ -1,7 +1,12 @@
 import '../css/main.css';
+import { loadView } from './router.js';
 
-fetch('/src/views/add.condominio.html')
-  .then(res => res.text())
-  .then(html => {
-    document.querySelector('#app').innerHTML = html;
-  });
+// Navegación SPA global
+document.addEventListener('click', e => {
+  const link = e.target.closest('[data-view]');
+  if (link) {
+    e.preventDefault();
+    const view = link.dataset.view;
+    loadView(view);
+  }
+});

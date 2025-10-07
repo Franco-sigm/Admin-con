@@ -32,12 +32,19 @@
                 <li><a href="#"><i class="fas fa-cog"></i> <span>Configuración</span></a></li>
                 <li><a href="#"><i class="fas fa-question-circle"></i> <span>Ayuda</span></a></li>
                 <li><a href="#"><i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span></a></li>
+                
+                <a href="#" data-view="add.condominio">
+                  <i class="fas fa-plus"></i>
+                  <span>Agregar Condominio</span>
+                </a>
+
             </ul>
         </nav>
     </div>
-
     <!-- Contenido principal -->
     <div class="main-content">
+      
+    <div id="app"></div>
         <div class="header">
             <h1>Panel Principal</h1>
             <div class="user-info">
@@ -70,7 +77,10 @@
         <div class="condominios-section">
             <div class="section-title">
                 <h2>Mis Condominios</h2>
-                <button class="btn"><i class="fas fa-plus"></i> Agregar Condominio</button>
+                <a href="#" data-view="add.condominio" class="btn">
+                  <i class="fas fa-plus"></i>
+                  <span>Agregar Condominio</span>
+                </a>
             </div>
 
             <div class="condominios-grid">
