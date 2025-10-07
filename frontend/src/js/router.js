@@ -1,26 +1,16 @@
 export async function loadView(viewName) {
-  try {
-    // Cargar el HTML de la vista
-    const res = await fetch(`/src/views/${viewName}.html`);
-    if (!res.ok) throw new Error(`Vista "${viewName}" no encontrada`);
-    const html = await res.text();
+  const res = await fetch(`/src/views/${viewName}.html`);
+  const html = await res.text();
+  document.querySelector('#app').innerHTML = html;
 
-    // Inyectar en el contenedor principal
-    const app = document.querySelector('#app');
-    if (!app) throw new Error('Contenedor #app no existe en index.html');
-    app.innerHTML = html;
+  // Eliminar script anterior si existe
+  const oldScript = document.querySelector(`script[data-view="${viewName}"]`);
+  if (oldScript) oldScript.remove();
 
-    // Cargar el script específico de la vista
-    const scriptPath = `/src/js/${viewName}.js`;
-    const script = document.createElement('script');
-    script.type = 'module';
-    script.src = scriptPath;
-    document.body.appendChild(script);
-  } catch (error) {
-    console.error('Error al cargar la vista:', error.message);
-    const app = document.querySelector('#app');
-    if (app) {
-      app.innerHTML = `<div class="text-red-500 p-4">Error: ${error.message}</div>`;
-    }
-  }
+  // Crear script con sufijo único para forzar recarga
+  const script = document.createElement('script');
+  script.type = 'module';
+  script.src = `/src/js/${viewName}.js?reload=${Date.now()}`; // 👈 sufijo dinámico
+  script.dataset.view = viewName;
+  document.body.appendChild(script);
 }
