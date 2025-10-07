@@ -1,100 +1,56 @@
-<!DOCTYPE html>
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Agregar Condominio</title>
-  </head>
-  <body>
-    <!-- Barra lateral -->
-  <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>AdminCondominios</h2>
-            <p>Panel de Administración</p>
-        </div>
-        <nav class="sidebar-menu">
-            <ul>
-                <li><a href="#" class="active"><i class="fas fa-home"></i> <span>Inicio</span></a></li>
-                <li><a href="#"><i class="fas fa-building"></i> <span>Condominios</span></a></li>
-                <li><a href="#"><i class="fas fa-users"></i> <span>Residentes</span></a></li>
-                <li><a href="#"><i class="fas fa-file-invoice-dollar"></i> <span>Gastos</span></a></li>
-                <li><a href="#"><i class="fas fa-clipboard-list"></i> <span>Reportes</span></a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> <span>Configuración</span></a></li>
-                <li><a href="#"><i class="fas fa-question-circle"></i> <span>Ayuda</span></a></li>
-                <li><a href="#"><i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span></a></li>
-            </ul>
-        </nav>
-    </div>
-    <!-- Contenido principal -->
+<section class="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Registrar Nuevo Condominio</h1>
+
+  <form id="form-condominio" class="space-y-6">
+    <!-- Nombre del condominio -->
     <div>
-      <div>
-        <h1>Agregar Nuevo Condominio</h1>
-        <div>
-          <img src="https://ui-avatars.com/api/?name=Admin+User&background=3498db&color=fff" alt="Usuario" />
-          <span>Administrador</span>
-        </div>
-      </div>
-
-      <!-- Formulario para nuevo condominio -->
-      <div>
-        <div>
-          <h2>Datos del Condominio</h2>
-        </div>
-
-        <form>
-          <div>
-            <label for="nombre">Nombre del condominio</label>
-            <input
-              type="text"
-              id="nombre"
-              name="nombre"
-              placeholder="Ej. Torres del Parque"
-              required
-            />
-          </div>
-
-          <div>
-            <label for="direccion">Dirección</label>
-            <input
-              type="text"
-              id="direccion"
-              name="direccion"
-              placeholder="Ej. Av. Principal #123"
-              required
-            />
-          </div>
-
-          <div>
-            <label for="telefono">Teléfono de contacto</label>
-            <input
-              type="tel"
-              id="telefono"
-              name="telefono"
-              placeholder="Ej. (123) 456-7890"
-              required
-            />
-          </div>
-
-          <div>
-            <label for="imagen">Imagen destacada</label>
-            <input
-              type="url"
-              id="imagen"
-              name="imagen"
-              placeholder="URL de la imagen"
-            />
-          </div>
-
-          <div>
-            <button type="submit">
-              <i>Guardar</i>
-              <span>Guardar Condominio</span>
-            </button>
-          </div>
-        </form>
-      </div>
+      <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del condominio</label>
+      <input
+        type="text"
+        id="nombre"
+        name="nombre"
+        required
+        placeholder="Ej. Torres del Parque"
+        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
     </div>
 
-    <script type="module" src="/src/js/add.condominio.js"></script>
-  </body>
-</html>
+    <!-- Dirección -->
+    <div>
+      <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección</label>
+      <input
+        type="text"
+        id="direccion"
+        name="direccion"
+        required
+        placeholder="Ej. Av. Principal #123"
+        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </div>
+
+    <!-- Número de residentes -->
+    <div>
+      <label for="residentes" class="block text-sm font-medium text-gray-700">Número de residentes</label>
+      <input
+        type="number"
+        id="residentes"
+        name="residentes"
+        required
+        min="1"
+        placeholder="Ej. 42"
+        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      />
+    </div>
+
+    <!-- Botón de envío -->
+    <div class="text-right">
+      <button
+        type="submit"
+        class="inline-flex items-center px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <i class="fas fa-save mr-2"></i>
+        Guardar Condominio
+      </button>
+    </div>
+  </form>
+</section>
