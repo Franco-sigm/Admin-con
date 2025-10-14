@@ -4,29 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AdminCondominios</title>
+  <script src="https://kit.fontawesome.com/your-kit-id.js" crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-  <!-- Barra lateral -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h2>AdminCondominios</h2>
-      <p>Panel de Administración</p>
+<body class="bg-gray-100">
+
+  <!-- Sidebar fijo y visible -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-40">
+    <div class="p-4 border-b">
+      <h2 class="text-xl font-bold text-blue-700">AdminCondominios</h2>
+      <p class="text-sm text-gray-600">Panel de Administración</p>
     </div>
-    <nav class="sidebar-menu">
-      <ul>
-
-        <li><a href="#" data-view="home"><i class="fas fa-home"></i> <span>Home</span></a></li>
-        
-        <!-- Más enlaces SPA -->
-      </ul>
+    <nav class="p-4 space-y-2">
+      <a href="#" data-view="home" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">🏠 Mis Comunidades</a>
+      <a href="#" data-view="comite" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">👥 Comité</a>
+      <a href="#" data-view="pagos" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">💳 Pagos</a>
+      <a href="#" data-view="add.condominio" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">➕ Agregar Condominio</a>
     </nav>
-  </div>
+  </aside>
 
-  <!-- Contenido dinámico SPA -->
-  <div class="main-content">
-    <div id="app"></div>
-  </div>
+  <!-- Contenido principal SPA -->
+  <main class="ml-64 transition-all duration-300">
+    <div id="app" class="p-6"></div>
+  </main>
 
+  <!-- Script principal -->
   <script type="module" src="/src/js/main.js"></script>
 </body>
 </html>

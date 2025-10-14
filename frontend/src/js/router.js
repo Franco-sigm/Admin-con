@@ -10,7 +10,7 @@ export async function loadView(viewName) {
   // Crear script con sufijo único para forzar recarga
   const script = document.createElement('script');
   script.type = 'module';
-  script.src = `/src/js/${viewName}.js?reload=${Date.now()}`; // 👈 sufijo dinámico
+  script.src = `/src/js/${viewName}.js?reload=${Date.now()}`; // 👈 sufijo dinámico (tecnica cache busting)
   script.dataset.view = viewName;
   document.body.appendChild(script);
 }
