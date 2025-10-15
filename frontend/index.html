@@ -1,34 +1,57 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"> <!-- MEJORA: Añadido el idioma para accesibilidad y SEO -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plataforma de administración de condominios."> <!-- MEJORA: Meta descripción -->
   <title>AdminCondominios</title>
-  <script src="https://kit.fontawesome.com/your-kit-id.js" crossorigin="anonymous"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+  <!-- MEJORA: Usamos la versión CSS de Font Awesome desde un CDN fiable. Es más rápido. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- MEJORA CRÍTICA: Eliminamos el CDN de Tailwind. Vite se encargará de los estilos. -->
 </head>
 <body class="bg-gray-100">
+  <div class="relative min-h-screen md:flex">
+    
+    <!-- Botón Hamburguesa para Móviles -->
+    <!-- MEJORA: Este botón solo será visible en pantallas pequeñas para mostrar/ocultar el sidebar. -->
+    <header class="bg-white md:hidden sticky top-0 z-30">
+        <div class="p-4 flex justify-between items-center shadow-md">
+            <h2 class="text-xl font-bold text-blue-700">AdminCondominios</h2>
+            <button id="sidebar-toggle" class="text-gray-600 focus:outline-none">
+                <i class="fas fa-bars fa-lg"></i>
+            </button>
+        </div>
+    </header>
 
-  <!-- Sidebar fijo y visible -->
-  <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-40">
-    <div class="p-4 border-b">
-      <h2 class="text-xl font-bold text-blue-700">AdminCondominios</h2>
-      <p class="text-sm text-gray-600">Panel de Administración</p>
-    </div>
-    <nav class="p-4 space-y-2">
-      <a href="#" data-view="home" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">🏠 Mis Comunidades</a>
-      <a href="#" data-view="comite" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">👥 Comité</a>
-      <a href="#" data-view="pagos" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">💳 Pagos</a>
-      <a href="#" data-view="add.condominio" class="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-600">➕ Agregar Condominio</a>
-    </nav>
-  </aside>
+    <!-- Sidebar -->
+    <!-- MEJORA: Clases para que esté oculto en móvil (-translate-x-full) y fijo en escritorio (md:translate-x-0) -->
+    <aside id="sidebar" class="bg-white text-gray-800 w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-40 shadow-lg">
+      <div class="px-4 border-b pb-4">
+        <h2 class="text-xl font-bold text-blue-700">AdminCondominios</h2>
+        <p class="text-sm text-gray-600">Panel de Administración</p>
+      </div>
+      <nav>
+        <!-- Los data-view son correctos y serán manejados por tu router -->
+        <a href="#" data-view="dashboard" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-100 hover:text-blue-600 flex items-center gap-3"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
+        <a href="#" data-view="comunidades" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-100 hover:text-blue-600 flex items-center gap-3"><i class="fas fa-building w-5"></i> Mis Comunidades</a>
+        <a href="#" data-view="pagos" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-100 hover:text-blue-600 flex items-center gap-3"><i class="fas fa-credit-card w-5"></i> Pagos</a>
+        <a href="#" data-view="add-condominio" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-100 hover:text-blue-600 flex items-center gap-3"><i class="fas fa-plus-circle w-5"></i> Agregar Condominio</a>
+      </nav>
+    </aside>
 
-  <!-- Contenido principal SPA -->
-  <main class="ml-64 transition-all duration-300">
-    <div id="app" class="p-6"></div>
-  </main>
+    <!-- Contenido principal -->
+    <!-- MEJORA: Eliminamos el margen fijo. Ahora el layout se adapta. -->
+    <main class="flex-1">
+      <div id="app" class="p-4 md:p-6 lg:p-8">
+        <!-- El contenido de las vistas se cargará aquí -->
+      </div>
+    </main>
+  </div>
 
-  <!-- Script principal -->
+  <!-- Script principal. La carga como 'module' es correcta. -->
   <script type="module" src="/src/js/main.js"></script>
 </body>
 </html>
+

@@ -1,5 +1,5 @@
-import { condominios } from './data.js';
-import { loadView } from './router.js';
+import { condominios } from '../../js/data.js';
+import { loadView } from '../../js/router.js';
 
 export function renderHome() {
   const grid = document.getElementById('grid-condominios');
