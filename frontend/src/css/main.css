@@ -159,8 +159,6 @@
   /* ... tus directivas de @tailwind ... */
 
 /* PRUEBA DE CARGA */
-body {
-  border: 5px solid red !important;
-}
+
   
 }
