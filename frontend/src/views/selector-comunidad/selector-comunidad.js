@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-gray-600 text-sm mb-4">${comunidad.direccion}</p>
                         
                         <div class="flex justify-between items-center mt-4">
-                            <a href="#" class="bg-green-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                            <a href="../dashboard-comunidad/dashboard-comunidad.html?id=${comunidad.id}" class="bg-green-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
                                 Administrar
                             </a>
                             
