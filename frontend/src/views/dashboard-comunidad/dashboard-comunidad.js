@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. REFERENCIAS A ELEMENTOS DEL DOM
     // ---
     const tituloDashboard = document.getElementById('comunidad-nombre-titulo');
+    const linkResidentes = document.getElementById('link-residentes');
+    const linkDashboard = document.getElementById('link-dashboard');
+   
+
 
     // ---
     // 4. LÓGICA PRINCIPAL: Leer ID y actualizar título
@@ -56,5 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---
     // Usamos textContent para insertar el nombre de forma segura
     tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
-
+    linkResidentes.href = `../residentes/residentes.html?id=${comunidadActual.id}`; 
+    linkDashboard.href = "#"; // Página actual
 });
