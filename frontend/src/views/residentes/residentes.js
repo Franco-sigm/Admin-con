@@ -193,9 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEditar = evento.target.closest('.btn-editar-residente');
         if (btnEditar) {
             const id = Number(btnEditar.dataset.id);
-            alert(`ID para EDITAR: ${id} (Aún no implementado)`);
+            
             // Aquí llamaríamos a la lógica de editar,
             // que probablemente nos lleve a un formulario
+            window.location.href = `../editar-residente/editar-residente.html?id_comunidad=${comunidadId}&id_residente=${id}`;
+            return;
         }
     });
 

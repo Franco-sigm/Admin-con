@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Residente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+
+        <div class="w-full max-w-lg bg-white rounded-lg shadow-xl p-6 md:p-10">
+
+            <h1 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                Editar Residente
+            </h1>
+
+            <form id="form-editar-residente">
+
+                <div class="space-y-6">
+
+                    <div>
+                        <label for="residente-nombre" class="block text-sm font-medium text-gray-700 mb-1">
+                            Nombre Completo
+                        </label>
+                        <input 
+                            type="text" 
+                            id="residente-nombre" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        >
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <div>
+                            <label for="residente-unidad" class="block text-sm font-medium text-gray-700 mb-1">
+                                Unidad (Casa/Apto)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="residente-unidad" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            >
+                        </div>
+
+                        <div>
+                            <label for="residente-telefono" class="block text-sm font-medium text-gray-700 mb-1">
+                                Teléfono
+                            </label>
+                            <input 
+                                type="tel" 
+                                id="residente-telefono" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            >
+                        </div>
+                    </div> <div>
+                        <label for="residente-estado" class="block text-sm font-medium text-gray-700 mb-1">
+                            Estado de Cuenta
+                        </label>
+                        <select 
+                            id="residente-estado" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="Al día">Al día</option>
+                            <option value="Moroso">Moroso</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="flex justify-end items-center gap-4 mt-10 pt-6 border-t border-gray-200">
+                    
+                    <a id="btn-cancelar" href="#"
+                       class="text-gray-600 font-medium py-2 px-4 rounded-md hover:bg-gray-100 transition-colors">
+                        Cancelar
+                    </a>
+
+                    <button 
+                        type="submit" 
+                        class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                    >
+                        Guardar Cambios
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <script src="./editar-residente.js"></script>
+
+</body>
+</html>

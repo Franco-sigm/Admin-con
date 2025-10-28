@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---
     const tituloDashboard = document.getElementById('comunidad-nombre-titulo');
     const linkResidentes = document.getElementById('link-residentes');
-    const linkDashboard = document.getElementById('link-dashboard');
+    //const linkDashboard = document.getElementById('link-dashboard');
    
 
 
@@ -61,5 +61,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // Usamos textContent para insertar el nombre de forma segura
     tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
     linkResidentes.href = `../residentes/residentes.html?id=${comunidadActual.id}`; 
-    linkDashboard.href = "#"; // Página actual
+   // linkDashboard.href = "#"; // Página actual
 });
