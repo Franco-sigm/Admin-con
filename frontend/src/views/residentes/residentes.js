@@ -130,34 +130,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Lógica para AÑADIR un nuevo residente
-     */
-    const agregarResidente = () => {
-        // Usamos 'prompt' para simular (igual que hicimos con las comunidades)
-        const nombre = prompt("Nombre del residente:");
-        if (!nombre) return;
-        
-        const unidad = prompt("Unidad (Ej: A-101):");
-        if (!unidad) return;
-        
-        const telefono = prompt("Teléfono:");
-        // (Dejaremos el estado como "Al día" por defecto)
-
-        const nuevoResidente = {
-            id: Date.now(),
-            nombre: nombre,
-            unidad: unidad,
-            telefono: telefono || 'N/A', // Si no pone nada, N/A
-            estado: 'Al día'
-        };
-
-        const residentes = getResidentes();
-        residentes.push(nuevoResidente);
-        saveResidentes(residentes);
-        
-        renderizarResidentes(); // Volvemos a dibujar la tabla
-    };
+    
+/**
+ * Lógica para AÑADIR un nuevo residente
+ */
+const agregarResidente = () => {
+    // ¡NUEVA LÓGICA!
+    // Simplemente redirigimos al formulario, pasando el ID de la comunidad.
+    // (La variable 'comunidadId' está disponible en este script)
+    window.location.href = `../nuevo-residente/nuevo-residente.html?id=${comunidadId}`;
+};
+// ...
 
     /**
      * Lógica para ELIMINAR un residente
