@@ -1,1 +1,1 @@
-Aplicación MPA vanilla vite, tailwind.
+Aplicación MPA Vanilla, Vite, Tailwind.
