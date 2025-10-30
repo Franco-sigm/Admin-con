@@ -1,7 +1,14 @@
 
 
-// ...el resto de tu lógica para esta página...
+// --- INICIO DEL GUARDIA DE RUTA ---
+const SESSION_KEY = 'admin_con_session';
+const sesionActiva = localStorage.getItem(SESSION_KEY);
 
+if (!sesionActiva) {
+    // Si NO hay sesión, lo devolvemos al login (que es la raíz '/')
+    // Usamos 'replace' para que no pueda volver atrás con el navegador
+    window.location.replace('/');
+}
 // ---
 // 1. EVENTO PRINCIPAL: Iniciar el script cuando el HTML esté cargado
 // ---
