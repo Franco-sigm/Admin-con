@@ -1,9 +1,8 @@
-/*
- * =========================================
- * selector.comunidades.js
- * =========================================
- * Maneja la lógica de la vista del selector de comunidades.
- */
+// src/views/selector-comunidad/selector-comunidad.js
+
+import './selector-comunidad.css';
+
+// ...el resto de tu lógica para esta página...
 
 // ---
 // 1. EVENTO PRINCIPAL: Iniciar el script cuando el HTML esté cargado

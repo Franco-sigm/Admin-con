@@ -65,12 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const getResidentes = () => {
         const data = localStorage.getItem(DB_KEY_RESIDENTES);
         if (!data) {
-            // Datos de ejemplo para la primera vez que entras a esta comunidad
-            const datosIniciales = [
-                { id: Date.now(), nombre: 'Franco Bernal (Ejemplo)', unidad: 'A-101', telefono: '+56912345678', estado: 'Al día' },
-            ];
-            saveResidentes(datosIniciales);
-            return datosIniciales;
+            return [];
         }
         return JSON.parse(data);
     };
