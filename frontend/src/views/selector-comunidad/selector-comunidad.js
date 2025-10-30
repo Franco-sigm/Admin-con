@@ -1,6 +1,4 @@
-// src/views/selector-comunidad/selector-comunidad.js
 
-import './selector-comunidad.css';
 
 // ...el resto de tu lógica para esta página...
 

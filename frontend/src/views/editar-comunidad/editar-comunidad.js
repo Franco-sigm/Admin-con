@@ -1,9 +1,4 @@
-/*
- * =========================================
- * editar-comunidad.js
- * =========================================
- * Controla la lógica del formulario de EDICIÓN de comunidad.
- */
+
 
 // 1. Esperar a que el HTML (DOM) esté completamente cargado
 document.addEventListener('DOMContentLoaded', () => {

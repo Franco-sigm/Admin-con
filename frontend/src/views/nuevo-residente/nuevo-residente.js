@@ -1,9 +1,4 @@
-/*
- * =========================================
- * nuevo-residente.js
- * =========================================
- * Controla la lógica del formulario para AÑADIR un nuevo residente.
- */
+
 
 document.addEventListener('DOMContentLoaded', () => {
 

@@ -1,9 +1,4 @@
-/*
- * =========================================
- * residentes.js
- * =========================================
- * Controla la lógica de la página de Residentes.
- */
+
 
 document.addEventListener('DOMContentLoaded', () => {
 

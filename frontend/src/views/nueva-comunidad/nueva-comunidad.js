@@ -1,9 +1,4 @@
-/*
- * =========================================
- * nueva-comunidad.js
- * =========================================
- * Controla la lógica del formulario de creación de comunidad.
- */
+
 
 // 1. Esperar a que el HTML (DOM) esté completamente cargado
 document.addEventListener('DOMContentLoaded', () => {

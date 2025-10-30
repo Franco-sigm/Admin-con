@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Residentes</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    
     
 </head>
-<body class="bg-gray-100">
+<body>
 
     <div class="flex h-screen">
 
@@ -53,66 +55,68 @@
             </div>
         </aside>
 
-       <main class="flex-1 h-screen overflow-y-auto p-8">
+        <main class="flex-1 h-screen overflow-y-auto p-8">
 
-    <header class="flex justify-between items-center mb-8">
-        <div>
-            <h1 id="comunidad-nombre-titulo" class="text-3xl font-bold text-gray-900">
-                Cargando Residentes...
-            </h1>
-            <p class="text-gray-600">Administra los residentes de esta comunidad.</p>
-        </div>
-        <button id="btn-nuevo-residente" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700">
-            &#43; Añadir Residente
-        </button>
-    </header>
+            <header class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 id="comunidad-nombre-titulo" class="text-3xl font-bold text-gray-900">
+                        Cargando Residentes...
+                    </h1>
+                    <p class="text-gray-600">Administra los residentes de esta comunidad.</p>
+                </div>
+                <button id="btn-nuevo-residente" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700">
+                    &#43; Añadir Residente
+                </button>
+            </header>
 
-    <div class="bg-white rounded-lg shadow-lg">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50 border-b-2 border-gray-200">
-                    <tr>
-                        <th class="p-4 text-left text-sm font-semibold text-gray-600">Nombre</th>
-                        <th class="p-4 text-left text-sm font-semibold text-gray-600">Unidad (Casa/Apto)</th>
-                        <th class="p-4 text-left text-sm font-semibold text-gray-600">Teléfono</th>
-                        <th class="p-4 text-left text-sm font-semibold text-gray-600">Estado</th>
-                        <th class="p-4 text-left text-sm font-semibold text-gray-600">Acciones</th>
-                    </tr>
-                </thead>
+            <div class="bg-white rounded-lg shadow-lg">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b-2 border-gray-200">
+                            <tr>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-600">Nombre</th>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-600">Unidad (Casa/Apto)</th>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-600">Teléfono</th>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-600">Estado</th>
+                                <th class="p-4 text-left text-sm font-semibold text-gray-600">Acciones</th>
+                            </tr>
+                        </thead>
 
-                <tbody id="tabla-residentes-body">
+                        <tbody id="tabla-residentes-body">
 
-                    <tr class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="p-4">Franco Bernal</td>
-                        <td class="p-4">A-101</td>
-                        <td class="p-4">+56 9 1234 5678</td>
-                        <td class="p-4">
-                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">Al día</span>
-                        </td>
-                        <td class="p-4 flex gap-2">
-                            <button class="text-blue-500 hover:text-blue-800" title="Editar">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L15.232 5.232z"></path></svg>
-                            </button>
-                            <button class="text-red-500 hover:text-red-800" title="Eliminar">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </td>
-                    </tr>
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="p-4">Franco Bernal</td>
+                                <td class="p-4">A-101</td>
+                                <td class="p-4">+56 9 1234 5678</td>
+                                <td class="p-4">
+                                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">Al día</span>
+                                </td>
+                                <td class="p-4 flex gap-2">
+                                    <button class="text-blue-500 hover:text-blue-800" title="Editar">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L15.232 5.232z"></path></svg>
+                                    </button>
+                                    <button class="text-red-500 hover:text-red-800" title="Eliminar">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>
 
-                </tbody>
-            </table>
-        </div>
+                        </tbody>
+                    </table>
+                </div>
 
-        <div id="estado-vacio-tabla" class="hidden text-center p-8">
-            <p class="text-gray-600">No hay residentes registrados en esta comunidad.</p>
-        </div>
+                <div id="estado-vacio-tabla" class="hidden text-center p-8">
+                    <p class="text-gray-600">No hay residentes registrados en esta comunidad.</p>
+                </div>
+            </div>
+
+        </main>
     </div>
 
-  </main>
-    </div>
-
-    <script type="module" src="/src/js/main.js"></script>
     <script type="module" src="./residentes.js"></script>
 
+
 </body>
+
+
 </html>

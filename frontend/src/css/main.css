@@ -3,9 +3,12 @@
 /* 1. Importa las reglas de Tailwind PRIMERO */
 @tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; 
 
-/* 2. Ahora @apply funcionará sin necesidad de @reference */
+
+
+/*estilos golbales*/
+
 body {
-  @apply bg-gray-100;
+    @apply bg-emerald-300;
 }

@@ -1,9 +1,4 @@
-/*
- * =========================================
- * editar-residente.js
- * =========================================
- * Controla la lógica del formulario de EDICIÓN de un residente.
- */
+
 
 document.addEventListener('DOMContentLoaded', () => {
 

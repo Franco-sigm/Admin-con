@@ -1,9 +1,4 @@
-/*
- * =========================================
- * dashboard-comunidad.js
- * =========================================
- * Controla la lógica del dashboard principal de una comunidad.
- */
+
 
 // 1. Esperar a que el HTML (DOM) esté completamente cargado
 document.addEventListener('DOMContentLoaded', () => {
