@@ -1,4 +1,19 @@
-
+// ¡NUEVO! - PASO 1: Función auxiliar
+// Esta función va AFUERA del 'DOMContentLoaded' para que esté disponible.
+/**
+ * Obtiene los residentes SÓLO de una comunidad específica
+ * @param {number} comunidadId - El ID de la comunidad
+ * @returns {Array} Un array de residentes
+ */
+const getResidentesPorComunidad = (comunidadId) => {
+    // Usamos la misma "llave" que definimos en residentes.js
+    const DB_KEY_RESIDENTES = `residentes_${comunidadId}`;
+    const data = localStorage.getItem(DB_KEY_RESIDENTES);
+    if (!data) {
+        return [];
+    }
+    return JSON.parse(data);
+};
 
 // 1. Esperar a que el HTML (DOM) esté completamente cargado
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tituloDashboard = document.getElementById('comunidad-nombre-titulo');
     const linkResidentes = document.getElementById('link-residentes');
     //const linkDashboard = document.getElementById('link-dashboard');
+    const totalResidentesStat = document.getElementById('total-residentes-stat');
    
 
 
@@ -57,4 +73,15 @@ document.addEventListener('DOMContentLoaded', () => {
     tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
     linkResidentes.href = `../residentes/residentes.html?id=${comunidadActual.id}`; 
    // linkDashboard.href = "#"; // Página actual
+
+   if (totalResidentesStat) {
+        // 1. Buscamos los residentes de ESTA comunidad
+        const residentes = getResidentesPorComunidad(comunidadId);
+        
+        // 2. Contamos cuántos hay
+        const totalResidentes = residentes.length;
+        
+        // 3. Actualizamos el número en el HTML
+        totalResidentesStat.textContent = totalResidentes;
+    }
 });
