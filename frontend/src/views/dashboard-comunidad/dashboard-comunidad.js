@@ -1,10 +1,64 @@
-// ¡NUEVO! - PASO 1: Función auxiliar
-// Esta función va AFUERA del 'DOMContentLoaded' para que esté disponible.
+// --- LÓGICA DEL SIDEBAR (PARTE 1: INMEDIATA) ---
+// (Va AFUERA del DOMContentLoaded para evitar el parpadeo)
+
+const SIDEBAR_STATE_KEY = 'sidebar_state';
+
 /**
- * Obtiene los residentes SÓLO de una comunidad específica
- * @param {number} comunidadId - El ID de la comunidad
- * @returns {Array} Un array de residentes
+ * Función que aplica el estado (abierto/cerrado) a la UI.
  */
+const aplicarEstadoSidebar = (estado) => {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    const sidebarTexts = document.querySelectorAll('.sidebar-text');
+    const sidebarSubtitle = document.getElementById('sidebar-subtitle');
+
+    if (!sidebar) return; 
+
+    if (estado === 'cerrado') {
+        // --- CERRAR --- (Esta parte ya estaba bien)
+        sidebar.classList.remove('w-64');
+        sidebar.classList.add('w-20');
+        mainContent.classList.remove('md:ml-64');
+        mainContent.classList.add('md:ml-20');
+
+        sidebarTexts.forEach(text => text.classList.add('opacity-0'));
+        if (sidebarSubtitle) sidebarSubtitle.classList.add('opacity-0');
+
+        setTimeout(() => {
+            sidebarTexts.forEach(text => text.classList.add('hidden'));
+            if (sidebarSubtitle) sidebarSubtitle.classList.add('hidden');
+        }, 200); // Coincide con tu duration-200
+        
+    } else {
+        // --- ABRIR --- (AQUÍ ESTÁ EL CAMBIO)
+        sidebar.classList.remove('w-20');
+        sidebar.classList.add('w-64');
+        mainContent.classList.remove('md:ml-20');
+        mainContent.classList.add('md:ml-64');
+
+        // 1. Quita 'hidden' PRIMERO.
+        sidebarTexts.forEach(text => text.classList.remove('hidden'));
+        if (sidebarSubtitle) sidebarSubtitle.classList.remove('hidden');
+
+        // 2. USA UN 'setTimeout' CON UN RETRASO MÍNIMO
+        // Esto le da al navegador un "tick" completo para aplicar
+        // el 'display: block' (de quitar 'hidden') ANTES
+        // de que intente animar la opacidad.
+        setTimeout(() => {
+            sidebarTexts.forEach(text => text.classList.remove('opacity-0'));
+            if (sidebarSubtitle) sidebarSubtitle.classList.remove('opacity-0');
+        }, 10); // 10ms es imperceptible para el usuario pero un mundo para el navegador
+    }
+};
+// --- Aplicamos el estado guardado INMEDIATAMENTE ---
+const estadoInicial = localStorage.getItem(SIDEBAR_STATE_KEY) || 'abierto';
+aplicarEstadoSidebar(estadoInicial);
+
+// --- FIN LÓGICA SIDEBAR (PARTE 1) ---
+
+
+// --- TU FUNCIÓN AUXILIAR (EXISTENTE) ---
+// (También va AFUERA del DOMContentLoaded)
 const getResidentesPorComunidad = (comunidadId) => {
     // Usamos la misma "llave" que definimos en residentes.js
     const DB_KEY_RESIDENTES = `residentes_${comunidadId}`;
@@ -18,10 +72,28 @@ const getResidentesPorComunidad = (comunidadId) => {
 // 1. Esperar a que el HTML (DOM) esté completamente cargado
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- LÓGICA DEL SIDEBAR (PARTE 2: LISTENER DEL BOTÓN) ---
+    // (Va ADENTRO del DOMContentLoaded, al principio)
+    const btnToggle = document.getElementById('btn-toggle-sidebar');
+    
+    if (btnToggle) {
+        btnToggle.addEventListener('click', () => {
+            // 1. Revisa el estado actual
+            const estadoActual = localStorage.getItem(SIDEBAR_STATE_KEY) || 'abierto';
+            // 2. Define el nuevo estado
+            const nuevoEstado = (estadoActual === 'abierto') ? 'cerrado' : 'abierto';
+            // 3. Aplica el cambio a la UI
+            aplicarEstadoSidebar(nuevoEstado);
+            // 4. Guarda el nuevo estado
+            localStorage.setItem(SIDEBAR_STATE_KEY, nuevoEstado);
+        });
+    }
+    // --- FIN LÓGICA SIDEBAR (PARTE 2) ---
+
+
     // ---
-    // 2. VINCULACIÓN (Datos): Funciones de Base de Datos (Copiadas)
+    // 2. VINCULACIÓN (Datos): Funciones de Base de Datos (TU CÓDIGO)
     // ---
-    // (Necesarias para leer el nombre de la comunidad)
     const DB_KEY = 'mis_comunidades';
 
     const getComunidades = () => {
@@ -33,17 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ---
-    // 3. REFERENCIAS A ELEMENTOS DEL DOM
+    // 3. REFERENCIAS A ELEMENTOS DEL DOM (TU CÓDIGO)
     // ---
     const tituloDashboard = document.getElementById('comunidad-nombre-titulo');
     const linkResidentes = document.getElementById('link-residentes');
     //const linkDashboard = document.getElementById('link-dashboard');
     const totalResidentesStat = document.getElementById('total-residentes-stat');
-   
-
-
+    
     // ---
-    // 4. LÓGICA PRINCIPAL: Leer ID y actualizar título
+    // 4. LÓGICA PRINCIPAL: Leer ID y actualizar título (TU CÓDIGO)
     // ---
     
     // Leemos el ID de la URL (ej: ?id=12345)
@@ -67,14 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---
-    // 5. ¡ÉXITO! Actualizamos el título
+    // 5. ¡ÉXITO! Actualizamos el título (TU CÓDIGO)
     // ---
     // Usamos textContent para insertar el nombre de forma segura
     tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
     linkResidentes.href = `../residentes/residentes.html?id=${comunidadActual.id}`; 
-   // linkDashboard.href = "#"; // Página actual
+    // linkDashboard.href = "#"; // Página actual
 
-   if (totalResidentesStat) {
+    if (totalResidentesStat) {
         // 1. Buscamos los residentes de ESTA comunidad
         const residentes = getResidentesPorComunidad(comunidadId);
         
