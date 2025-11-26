@@ -19,7 +19,9 @@ function getHtmlEntries() {
     'nuevo-residente',
     'residentes',
     'selector-comunidad',
-    'registro', // <-- Tu vista de registro
+    'registro',
+    'pagos-gastos',
+   
   ];
 
   const entries = {};
