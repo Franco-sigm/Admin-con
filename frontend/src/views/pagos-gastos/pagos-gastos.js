@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkResidentes = document.getElementById('link-residentes'); 
     const linkPagosGastos = document.getElementById('link-pagos-gastos'); 
     
-    // [Tus otras referencias de Finanzas como btnNuevaTransaccion, etc.]
+    // [otras referencias de Finanzas como btnNuevaTransaccion, etc.]
     const btnNuevaTransaccion = document.getElementById('btn-nueva-transaccion');
 
 
