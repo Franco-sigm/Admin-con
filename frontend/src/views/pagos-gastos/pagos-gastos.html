@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagos y Gastos</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    
+</head>
+<body class="flex bg-gray-50 min-h-screen">
+
+    <aside class="w-64 h-screen bg-white shadow-lg sticky top-0">
+        
+        <nav class="mt-8">
+            <ul>
+                <li>
+                    <a id="link-dashboard" href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Inicio (Dashboard)
+                    </a>
+                </li>
+                <li>
+                    <a id="link-residentes" href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Residentes
+                    </a>
+                </li>
+                <li>
+                    <a id="link-pagos-gastos" href="#" class="flex items-center px-6 py-3 text-blue-600 bg-blue-50 border-r-4 border-blue-600 font-semibold"> 
+                        <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2-1.343-2-3-2zM4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8-8-3.582-8-8z"></path></svg>
+                        Pagos y Gastos
+                    </a>
+                </li>
+                </ul>
+        </nav>
+        <div class="absolute bottom-0 left-0 w-full p-6">
+                <a href="../selector-comunidad/selector-comunidad.html" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Volver al Selector
+                </a>
+            </div>
+    </aside>
+    
+    <main id="main-content" class="flex-1 overflow-y-auto p-8">
+
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 id="comunidad-nombre-titulo" class="text-3xl font-bold text-gray-900">
+                        Cargando Finanzas...
+                    </h1>
+                    <p class="text-gray-600">Gestión de ingresos y egresos de la comunidad.</p>
+                </div>
+            </div>
+            
+            <button id="btn-nueva-transaccion" class="bg-green-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-green-700">
+                &#43; Añadir Transacción
+            </button>
+        </header>
+
+        <section id="finanzas-content" class="space-y-10">
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Balance Financiero</h2>
+                    <select id="selector-periodo" class="border border-gray-300 rounded-md p-2 shadow-sm"></select>
+                </div>
+                
+                <div id="balance-reporte" class="grid grid-cols-3 gap-6 text-center">
+                    
+                    <div class="bg-green-100 p-4 rounded-lg">
+                        <p class="text-sm font-semibold text-green-700">Total Ingresos</p>
+                        <p id="ingresos-total" class="text-3xl font-extrabold text-green-800">$0</p>
+                    </div>
+
+                    <div class="bg-red-100 p-4 rounded-lg">
+                        <p class="text-sm font-semibold text-red-700">Total Egresos</p>
+                        <p id="egresos-total" class="text-3xl font-extrabold text-red-800">$0</p>
+                    </div>
+
+                    <div id="balance-neto-card" class="bg-blue-100 p-4 rounded-lg">
+                        <p class="text-sm font-semibold text-blue-700">Balance Neto</p>
+                        <p id="balance-neto" class="text-3xl font-extrabold text-blue-800">$0</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Historial de Transacciones</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transacciones-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <p id="sin-transacciones-msg" class="text-center text-gray-500 p-4 hidden">No hay transacciones registradas para este periodo.</p>
+            </div>
+            
+        </section>
+
+    </main>
+    <script type="module" src="./pagos-gastos.js"></script>
+</body>
+</html>

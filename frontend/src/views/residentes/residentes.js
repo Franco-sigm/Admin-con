@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tituloSeccion = document.getElementById('comunidad-nombre-titulo');
     const linkDashboard = document.getElementById('link-dashboard'); // (Lo añadiste en el HTML)
     const linkResidentes = document.getElementById('link-residentes');
+    const linkPagosGastos = document.getElementById('link-pagos-gastos'); // (Lo añadiste en el HTML)
 
     // Leer el ID de la comunidad desde la URL
     const params = new URLSearchParams(window.location.search);
@@ -40,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 2. Actualizar links del Sidebar
         linkDashboard.href = `../dashboard-comunidad/dashboard-comunidad.html?id=${comunidadId}`;
+        linkPagosGastos.href = `../pagos-gastos/pagos-gastos.html?id=${comunidadId}`;
         linkResidentes.href = "#"; // ¡Esta es la página activa!
         // (Aquí añadirías los links a Pagos, Áreas, etc. cuando existan)
     } else {

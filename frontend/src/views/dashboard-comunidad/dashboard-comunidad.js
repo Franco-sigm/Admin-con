@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---
     const tituloDashboard = document.getElementById('comunidad-nombre-titulo');
     const linkResidentes = document.getElementById('link-residentes');
-    //const linkDashboard = document.getElementById('link-dashboard');
+    const linkPagosGastos = document.getElementById('link-pagos-gastos');
     const totalResidentesStat = document.getElementById('total-residentes-stat');
     
     // ---
@@ -69,12 +69,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---
-    // 5. ¡ÉXITO! Actualizamos el título (TU CÓDIGO)
+    //Actualizamos el título (CÓDIGO)
     // ---
     // Usamos textContent para insertar el nombre de forma segura
     tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
     linkResidentes.href = `../residentes/residentes.html?id=${comunidadActual.id}`; 
-    // linkDashboard.href = "#"; // Página actual
+    linkPagosGastos.href = `../pagos-gastos/pagos-gastos.html?id=${comunidadActual.id}`;
+    linkDashboard.href = "#"; // Página actual
 
     if (totalResidentesStat) {
         // 1. Buscamos los residentes de ESTA comunidad
