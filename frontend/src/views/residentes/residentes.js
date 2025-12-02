@@ -1,18 +1,15 @@
 
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    // ---
-    // PARTE 1: LÓGICA DEL LAYOUT (Sidebar y Título)
-    // ---
-
-    // DB de Comunidades (para leer el nombre)
+ // DB de Comunidades (para leer el nombre)
     const DB_KEY_COMUNIDADES = 'mis_comunidades';
     const getComunidades = () => {
         const data = localStorage.getItem(DB_KEY_COMUNIDADES);
         if (!data) return [];
         return JSON.parse(data);
     };
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+
 
     // Referencias al DOM (Layout)
     const tituloSeccion = document.getElementById('comunidad-nombre-titulo');
