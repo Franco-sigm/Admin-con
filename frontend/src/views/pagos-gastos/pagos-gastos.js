@@ -19,6 +19,24 @@ const activarLink = (linkElement) => {
         linkElement.classList.add(...ACTIVE_CLASSES);
     }
 };
+
+// Función para obtener transacciones (llave dinámica por comunidad)
+const getTransacciones = (id) => {
+    const key = `transacciones_${id}`;
+    return JSON.parse(localStorage.getItem(key) || '[]');
+};
+
+// Función de utilidad para formatear dinero
+const formatCurrency = (amount) => {
+    // Usamos 'es-CL' para el formato chileno (ajusta si es necesario)
+    return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        minimumFractionDigits: 0
+    }).format(amount);
+};
+
+
 // --- FIN FUNCIONES UNIVERSALES ---
 
 
