@@ -1,6 +1,6 @@
 
  // DB de Comunidades (para leer el nombre)
-    const DB_KEY_COMUNIDADES = 'mis_comunidades';
+    const DB_KEY_COMUNIDADES = "mis_comunidades";
     const getComunidades = () => {
         const data = localStorage.getItem(DB_KEY_COMUNIDADES);
         if (!data) return [];
@@ -8,23 +8,22 @@
     };
 
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener("DOMContentLoaded", () => {
 
 
     // Referencias al DOM (Layout)
-    const tituloSeccion = document.getElementById('comunidad-nombre-titulo');
-    const linkDashboard = document.getElementById('link-dashboard'); // (Lo añadiste en el HTML)
-    const linkResidentes = document.getElementById('link-residentes');
-    const linkPagosGastos = document.getElementById('link-pagos-gastos'); // (Lo añadiste en el HTML)
+    const tituloSeccion = document.getElementById("comunidad-nombre-titulo");
+    const linkDashboard = document.getElementById("link-dashboard"); // (Lo añadiste en el HTML)
+    const linkResidentes = document.getElementById("link-residentes");
+    const linkPagosGastos = document.getElementById("link-pagos-gastos"); // (Lo añadiste en el HTML)
 
     // Leer el ID de la comunidad desde la URL
     const params = new URLSearchParams(window.location.search);
-    const comunidadId = Number(params.get('id')); // Usamos 'id_comunidad' como definimos
-
+    const comunidadId = Number(params.get("id")); // Usamos 'id_comunidad' como definimos
     let comunidadActual;
 
     if (!comunidadId) {
-        tituloSeccion.textContent = 'Error: Comunidad no válida';
+        tituloSeccion.textContent = "Error: Comunidad no válida";
         return;
     }
 
@@ -42,7 +41,7 @@
         linkResidentes.href = "#"; // ¡Esta es la página activa!
         // (Aquí añadirías los links a Pagos, Áreas, etc. cuando existan)
     } else {
-        tituloSeccion.textContent = 'Error: Comunidad no encontrada';
+        tituloSeccion.textContent = "Error: Comunidad no encontrada";
         return;
     }
 
@@ -72,27 +71,27 @@
     };
 
     // Referencias al DOM (Contenido)
-    const tablaBody = document.getElementById('tabla-residentes-body');
-    const estadoVacioTabla = document.getElementById('estado-vacio-tabla');
-    const btnNuevoResidente = document.getElementById('btn-nuevo-residente');
+    const tablaBody = document.getElementById("tabla-residentes-body");
+    const estadoVacioTabla = document.getElementById("estado-vacio-tabla");
+    const btnNuevoResidente = document.getElementById("btn-nuevo-residente");
 
     /**
      * Dibuja la tabla de residentes
      */
     const renderizarResidentes = () => {
         const residentes = getResidentes();
-        tablaBody.innerHTML = ''; // Limpiamos la tabla
+        tablaBody.innerHTML = ""; // Limpiamos la tabla
 
         if (residentes.length === 0) {
-            estadoVacioTabla.classList.remove('hidden');
+            estadoVacioTabla.classList.remove("hidden");
         } else {
-            estadoVacioTabla.classList.add('hidden');
+            estadoVacioTabla.classList.add("hidden");
             
             residentes.forEach(residente => {
                 // Definimos el color del estado
-                const estadoColor = residente.estado === 'Al día' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800';
+                const estadoColor = residente.estado === "Al día" 
+                    ? "bg-green-100 text-green-800" 
+                    : "bg-red-100 text-red-800";
                 
                 const filaHTML = `
                 <tr class="border-b border-gray-200 hover:bg-gray-50">
@@ -149,12 +148,12 @@ const agregarResidente = () => {
     // ---
 
     // Botón principal "Añadir Residente"
-    btnNuevoResidente.addEventListener('click', agregarResidente);
+    btnNuevoResidente.addEventListener("click", agregarResidente);
 
     // Listeners para la tabla (Editar y Eliminar)
-    tablaBody.addEventListener('click', (evento) => {
+    tablaBody.addEventListener("click", (evento) => {
         // Eliminar
-        const btnEliminar = evento.target.closest('.btn-eliminar-residente');
+        const btnEliminar = evento.target.closest(".btn-eliminar-residente");
         if (btnEliminar) {
             const id = Number(btnEliminar.dataset.id);
             eliminarResidente(id);
@@ -162,7 +161,7 @@ const agregarResidente = () => {
         }
 
         // Editar (Aún no hace nada, pero preparamos el botón)
-        const btnEditar = evento.target.closest('.btn-editar-residente');
+        const btnEditar = evento.target.closest(".btn-editar-residente");
         if (btnEditar) {
             const id = Number(btnEditar.dataset.id);
             

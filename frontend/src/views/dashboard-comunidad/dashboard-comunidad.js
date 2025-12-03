@@ -1,90 +1,99 @@
-// --- LÓGICA DEL SIDEBAR (PARTE 1: INMEDIATA) ---
-// (Va AFUERA del DOMContentLoaded para evitar el parpadeo)
+// src/views/dashboard-comunidad/dashboard-comunidad.js
 
+// --- 1. FUNCIONES UNIVERSALES (Van AFUERA) ---
 
+// Clases para el estado ACTIVO (Azul) y PASIVO (Gris)
+const ACTIVE_CLASSES = ["text-blue-600", "bg-blue-50", "border-r-4", "border-blue-600", "font-semibold"];
+const PASSIVE_CLASSES = ["text-gray-700", "hover:bg-gray-100"];
 
-/**
- * Función que aplica el estado (abierto/cerrado) a la UI.
- */
+const limpiarClasesActivas = (linkElement) => {
+    if (linkElement) {
+        linkElement.classList.remove(...ACTIVE_CLASSES);
+        linkElement.classList.add(...PASSIVE_CLASSES);
+    }
+};
 
-// --- TU FUNCIÓN AUXILIAR (EXISTENTE) ---
-// (También va AFUERA del DOMContentLoaded)
+const activarLink = (linkElement) => {
+    if (linkElement) {
+        linkElement.classList.remove(...PASSIVE_CLASSES);
+        linkElement.classList.add(...ACTIVE_CLASSES);
+    }
+};
+
+// --- 2. FUNCIONES AUXILIARES DE DATOS ---
+
 const getResidentesPorComunidad = (comunidadId) => {
-    // Usamos la misma "llave" que definimos en residentes.js
     const DB_KEY_RESIDENTES = `residentes_${comunidadId}`;
     const data = localStorage.getItem(DB_KEY_RESIDENTES);
-    if (!data) {
-        return [];
-    }
+    if (!data) return [];
     return JSON.parse(data);
 };
 
-// 1. Esperar a que el HTML (DOM) esté completamente cargado
-document.addEventListener('DOMContentLoaded', () => {
+// ---------------------------------------------------------
 
+document.addEventListener("DOMContentLoaded", () => {
 
-    // ---
-    // 2. VINCULACIÓN (Datos): Funciones de Base de Datos 
-    // ---
-    const DB_KEY = 'mis_comunidades';
+    // --- 3. REFERENCIAS AL DOM ---
+    const tituloDashboard = document.getElementById("comunidad-nombre-titulo");
+    
+    // Referencias de Links del Sidebar
+    const linkDashboard = document.getElementById("link-dashboard");
+    const linkResidentes = document.getElementById("link-residentes");
+    const linkPagosGastos = document.getElementById("link-pagos-gastos");
+    
+    // Referencia de Stats
+    const totalResidentesStat = document.getElementById("total-residentes-stat");
+    
+    // --- 4. VALIDACIÓN DE COMUNIDAD ---
+    const params = new URLSearchParams(window.location.search);
+    const comunidadId = Number(params.get("id"));
 
+    // DB de Comunidades (Local)
     const getComunidades = () => {
-        const data = localStorage.getItem(DB_KEY);
-        if (!data) {
-            return [];
-        }
-        return JSON.parse(data);
+        const data = localStorage.getItem("mis_comunidades");
+        return data ? JSON.parse(data) : [];
     };
 
-    // ---
-    // 3. REFERENCIAS A ELEMENTOS DEL DOM (TU CÓDIGO)
-    // ---
-    const tituloDashboard = document.getElementById('comunidad-nombre-titulo');
-    const linkResidentes = document.getElementById('link-residentes');
-    const linkPagosGastos = document.getElementById('link-pagos-gastos');
-    const totalResidentesStat = document.getElementById('total-residentes-stat');
-    
-    // ---
-    // 4. LÓGICA PRINCIPAL: Leer ID y actualizar título (TU CÓDIGO)
-    // ---
-    
-    // Leemos el ID de la URL (ej: ?id=12345)
-    const params = new URLSearchParams(window.location.search);
-    const comunidadId = Number(params.get('id'));
-
-    // Si no hay ID, mostramos un error en el título
     if (!comunidadId) {
-        tituloDashboard.textContent = 'Error: Comunidad no encontrada';
+        tituloDashboard.textContent = "Error: Comunidad no encontrada";
         return; 
     }
 
-    // Buscamos la comunidad en nuestra "base de datos"
     const comunidades = getComunidades();
     const comunidadActual = comunidades.find(com => com.id === comunidadId);
 
-    // Si el ID existe pero no encontramos la comunidad
     if (!comunidadActual) {
-        tituloDashboard.textContent = 'Error: Comunidad no encontrada';
+        tituloDashboard.textContent = "Error: Comunidad no encontrada";
         return;
     }
 
-    // ---
-    //Actualizamos el título (CÓDIGO)
-    // ---
-    // Usamos textContent para insertar el nombre de forma segura
-    tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
-    linkResidentes.href = `../residentes/residentes.html?id=${comunidadActual.id}`; 
-    linkPagosGastos.href = `../pagos-gastos/pagos-gastos.html?id=${comunidadActual.id}`;
-    linkDashboard.href = "#"; // Página actual
+    // --- 5. LÓGICA PRINCIPAL ---
 
+    // A. Actualizar Título
+    tituloDashboard.textContent = `Dashboard: ${comunidadActual.nombre}`;
+    
+    // B. Actualizar Links y Navegación (El bloque universal)
+    const comunidadHref = `?id=${comunidadActual.id}`;
+    
+    // 1. Setear HREFs dinámicos (para poder navegar a otras secciones)
+    if (linkDashboard) linkDashboard.href = `../dashboard-comunidad/dashboard-comunidad.html${comunidadHref}`;
+    if (linkResidentes) linkResidentes.href = `../residentes/residentes.html${comunidadHref}`;
+    if (linkPagosGastos) linkPagosGastos.href = `../pagos-gastos/pagos-gastos.html${comunidadHref}`;
+
+    // 2. Limpiar y Activar Color
+    limpiarClasesActivas(linkResidentes);
+    limpiarClasesActivas(linkPagosGastos);
+    // Limpiamos el dashboard también por seguridad
+    limpiarClasesActivas(linkDashboard);
+    
+    // 3. ACTIVAR SOLO EL DASHBOARD (Página actual)
+    activarLink(linkDashboard);
+
+
+    // C. Cargar Datos del Dashboard (Stats)
     if (totalResidentesStat) {
-        // 1. Buscamos los residentes de ESTA comunidad
         const residentes = getResidentesPorComunidad(comunidadId);
-        
-        // 2. Contamos cuántos hay
         const totalResidentes = residentes.length;
-        
-        // 3. Actualizamos el número en el HTML
         totalResidentesStat.textContent = totalResidentes;
     }
 });

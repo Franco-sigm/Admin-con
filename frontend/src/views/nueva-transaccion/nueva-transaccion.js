@@ -6,7 +6,7 @@
 // Función para obtener transacciones (llave dinámica por comunidad)
 const getTransacciones = (id) => {
     const key = `transacciones_${id}`;
-    return JSON.parse(localStorage.getItem(key) || '[]');
+    return JSON.parse(localStorage.getItem(key) || "[]");
 };
 
 // Función para guardar transacciones
@@ -17,29 +17,29 @@ const saveTransacciones = (id, transacciones) => {
 
 // --- FIN FUNCIONES TEMPORALES ---
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
     // Referencias del DOM
-    const form = document.getElementById('transaccion-form');
-    const btnCancelar = document.getElementById('btn-cancelar');
-    const formTitle = document.getElementById('form-title');
+    const form = document.getElementById("transaccion-form");
+    const btnCancelar = document.getElementById("btn-cancelar");
+    const formTitle = document.getElementById("form-title");
 
     // 1. Obtener la comunidad ID y la URL de retorno de la URL
     const params = new URLSearchParams(window.location.search);
-    const comunidadId = Number(params.get('comunidadId'));
-    const returnUrl = params.get('returnUrl') || '../pagos-gastos/pagos-gastos.html'; // URL de retorno si no se especifica
+    const comunidadId = Number(params.get("comunidadId"));
+    const returnUrl = params.get("returnUrl") || "../pagos-gastos/pagos-gastos.html"; // URL de retorno si no se especifica
 
     // 2. Validación Inicial
     if (!comunidadId) {
         alert("Error: ID de comunidad no especificado. Volviendo al selector.");
-        window.location.replace('../selector-comunidad/selector-comunidad.html'); // Usamos replace para no contaminar el historial
+        window.location.replace("../selector-comunidad/selector-comunidad.html"); // Usamos replace para no contaminar el historial
         return;
     }
     
     // 3. Lógica de UI / Eventos
     
     // A. Seteamos la fecha de hoy por defecto
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha').value = hoy;
+const hoy = new Date().toISOString().split("T")[0];
+    document.getElementById("fecha").value = hoy;
 
     // Actualizar título del formulario
     if (formTitle) {
@@ -47,17 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // B. Manejo del Submit del Formulario
-    form.addEventListener('submit', (e) => {
+    form.addEventListener("submit", (e) => {
         e.preventDefault();
 
         // 3.1. Capturar los datos del formulario
         const formData = new FormData(form);
         const nuevaTransaccion = {
             id: Date.now(), // ID temporal único
-            tipo: formData.get('tipo'),
-            descripcion: formData.get('descripcion'),
-            monto: Number(formData.get('monto')),
-            fecha: formData.get('fecha'),
+            tipo: formData.get("tipo"),
+            descripcion: formData.get("descripcion"),
+            monto: Number(formData.get("monto")),
+            fecha: formData.get("fecha"),
             comunidadId: comunidadId, 
         };
         
@@ -79,8 +79,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // C. Manejo del Botón Cancelar
-    btnCancelar.addEventListener('click', () => {
+    btnCancelar.addEventListener("click", () => {
         // Usa la URL de retorno
         window.location.href = `${returnUrl}?id=${comunidadId}`;
     });
 });
+
+
+
+
+
+
