@@ -1,6 +1,6 @@
 // frontend/vite.config.js
 
-import { resolve } from 'path';
+import { resolve } from "path";
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'url'; // <-- IMPORTA ESTO
 

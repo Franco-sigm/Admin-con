@@ -28,6 +28,11 @@ const getResidentesPorComunidad = (comunidadId) => {
     if (!data) return [];
     return JSON.parse(data);
 };
+// [NUEVO] Función para obtener anuncios
+const getAnuncios = (id) => {
+    const key = `anuncios_${id}`;
+    return JSON.parse(localStorage.getItem(key) || "[]");
+};
 
 // ---------------------------------------------------------
 
@@ -40,10 +45,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const linkDashboard = document.getElementById("link-dashboard");
     const linkResidentes = document.getElementById("link-residentes");
     const linkPagosGastos = document.getElementById("link-pagos-gastos");
-    const enviarAnuncioLink = document.getElementById("enviar-anuncio-link");
+    const creArAnuncio = document.getElementById("btn-ir-a-crear-anuncio");
+    const listaAnunciosUL = document.getElementById("lista-anuncios");
+    const btnEnviarAnuncio = document.getElementById("btn-enviar-anuncio");
     
     // Referencia de Stats
     const totalResidentesStat = document.getElementById("total-residentes-stat");
+    const totalAnunciosStat = document.getElementById("total-anuncios-stat");
     
     // --- 4. VALIDACIÓN DE COMUNIDAD ---
     const params = new URLSearchParams(window.location.search);
@@ -80,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (linkDashboard) linkDashboard.href = `../dashboard-comunidad/dashboard-comunidad.html${comunidadHref}`;
     if (linkResidentes) linkResidentes.href = `../residentes/residentes.html${comunidadHref}`;
     if (linkPagosGastos) linkPagosGastos.href = `../pagos-gastos/pagos-gastos.html${comunidadHref}`;
-    if (enviarAnuncioLink) enviarAnuncioLink.href = `../nuevo-anuncio/nuevo-anuncio.html${comunidadHref}`;
+    if (creArAnuncio) creArAnuncio.href = `../nuevo-anuncio/nuevo-anuncio.html${comunidadHref}`;
 
     // 2. Limpiar y Activar Color
     limpiarClasesActivas(linkResidentes);
@@ -91,6 +99,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. ACTIVAR SOLO EL DASHBOARD (Página actual)
     activarLink(linkDashboard);
 
+    if (btnEnviarAnuncio) {
+        // Si es un <a> usamos href, si es <button> usamos evento click (opcional)
+        
+        btnEnviarAnuncio.addEventListener("click", (e) => {
+             e.preventDefault(); // Por si acaso es un link con #
+             window.location.href = `../nuevo-anuncio/nuevo-anuncio.html${comunidadHref}`;
+        });
+    }
+
 
     // C. Cargar Datos del Dashboard (Stats)
     if (totalResidentesStat) {
@@ -98,4 +115,40 @@ document.addEventListener("DOMContentLoaded", () => {
         const totalResidentes = residentes.length;
         totalResidentesStat.textContent = totalResidentes;
     }
+    // --- D. CARGAR DATOS (ANUNCIOS) [NUEVO] ---
+    if (listaAnunciosUL) {
+        const anuncios = getAnuncios(comunidadId);
+        
+        // 1. Actualizar el contador de anuncios
+        if (totalAnunciosStat) {
+            totalAnunciosStat.textContent = anuncios.length;
+        }
+
+        // 2. Renderizar la lista
+        listaAnunciosUL.innerHTML = ""; // Limpiar contenido previo (cargando...)
+
+        if (anuncios.length === 0) {
+            listaAnunciosUL.innerHTML = "<li class=\"text-gray-500 text-sm italic\">No hay anuncios publicados.</li>";
+        } else {
+            // Mostrar los últimos 5 anuncios
+            anuncios.slice(0, 5).forEach(anuncio => {
+                // Definir color del borde según prioridad
+                let borderClass = "border-l-4 border-gray-300"; // Normal
+                if (anuncio.prioridad === "alta") borderClass = "border-l-4 border-red-500";
+                if (anuncio.prioridad === "baja") borderClass = "border-l-4 border-blue-300";
+
+                const li = document.createElement("li");
+                li.className = `bg-gray-50 p-3 rounded shadow-sm ${borderClass}`;
+                li.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <p class="font-medium text-gray-800">${anuncio.titulo}</p>
+                        <span class="text-xs text-gray-400">${anuncio.fecha}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1 line-clamp-2">${anuncio.mensaje}</p>
+                `;
+                listaAnunciosUL.appendChild(li);
+            });
+        }
+    }
 });
+    
