@@ -1,4 +1,4 @@
-#  AdminCon | Sistema de Gestión de Comunidades [Frontend MVP] Proyecto de mejora para validacion de practica laboral para Comunidad Parque Suizo 900]
+#  AdminCon | Sistema de Gestión de Comunidades Residenciales [Frontend MVP] Proyecto de mejora para validacion de practica laboral para Comunidad Parque Suizo 900]
 
 Este proyecto es la **capa de presentación y lógica del cliente** para un futuro sistema full-stack. Su propósito es demostrar la arquitectura de navegación, la persistencia de datos en el cliente y las funcionalidades esenciales de los módulos.
 
