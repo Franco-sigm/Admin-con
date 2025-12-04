@@ -33,6 +33,11 @@ const getAnuncios = (id) => {
     const key = `anuncios_${id}`;
     return JSON.parse(localStorage.getItem(key) || "[]");
 };
+// [NUEVO] Función necesaria para guardar los cambios al borrar
+const saveAnuncios = (comunidadId, anuncios) => {
+    const key = `anuncios_${comunidadId}`;
+    localStorage.setItem(key, JSON.stringify(anuncios));
+};
 
 // ---------------------------------------------------------
 
@@ -116,39 +121,77 @@ document.addEventListener("DOMContentLoaded", () => {
         totalResidentesStat.textContent = totalResidentes;
     }
     // --- D. CARGAR DATOS (ANUNCIOS) [NUEVO] ---
-    if (listaAnunciosUL) {
+   // 1. Definimos la función de renderizado para poder re-usarla
+    const renderizarAnuncios = () => {
+        if (!listaAnunciosUL) return;
+
         const anuncios = getAnuncios(comunidadId);
         
-        // 1. Actualizar el contador de anuncios
+        // Actualizar contador
         if (totalAnunciosStat) {
             totalAnunciosStat.textContent = anuncios.length;
         }
 
-        // 2. Renderizar la lista
-        listaAnunciosUL.innerHTML = ""; // Limpiar contenido previo (cargando...)
+        // Limpiar lista visual
+        listaAnunciosUL.innerHTML = ""; 
 
         if (anuncios.length === 0) {
             listaAnunciosUL.innerHTML = "<li class=\"text-gray-500 text-sm italic\">No hay anuncios publicados.</li>";
         } else {
-            // Mostrar los últimos 5 anuncios
+            // Mostrar últimos 5 anuncios
             anuncios.slice(0, 5).forEach(anuncio => {
-                // Definir color del borde según prioridad
-                let borderClass = "border-l-4 border-gray-300"; // Normal
+                let borderClass = "border-l-4 border-gray-300"; 
                 if (anuncio.prioridad === "alta") borderClass = "border-l-4 border-red-500";
                 if (anuncio.prioridad === "baja") borderClass = "border-l-4 border-blue-300";
 
                 const li = document.createElement("li");
-                li.className = `bg-gray-50 p-3 rounded shadow-sm ${borderClass}`;
+                li.className = `bg-gray-50 p-3 rounded shadow-sm ${borderClass} flex justify-between items-start group`;
+                
+                // HTML INTERNO: Incluye el botón de borrar con icono SVG
                 li.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <p class="font-medium text-gray-800">${anuncio.titulo}</p>
-                        <span class="text-xs text-gray-400">${anuncio.fecha}</span>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <p class="font-medium text-gray-800">${anuncio.titulo}</p>
+                            <span class="text-xs text-gray-400 ml-2">${anuncio.fecha}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1 line-clamp-2">${anuncio.mensaje}</p>
                     </div>
-                    <p class="text-sm text-gray-600 mt-1 line-clamp-2">${anuncio.mensaje}</p>
+                    
+                    <button class="btn-eliminar-anuncio ml-3 text-gray-400 hover:text-red-500 transition-colors" data-id="${anuncio.id}" title="Eliminar anuncio">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
                 `;
                 listaAnunciosUL.appendChild(li);
             });
         }
+    };
+
+    // 2. Ejecutar renderizado inicial
+    renderizarAnuncios();
+
+    // 3. Listener para borrar (Delegación de Eventos)
+    if (listaAnunciosUL) {
+        listaAnunciosUL.addEventListener("click", (e) => {
+            // Buscamos si el clic fue en un botón de eliminar (o en el ícono dentro)
+            const btn = e.target.closest(".btn-eliminar-anuncio");
+            
+            if (btn) {
+                const idAnuncio = Number(btn.dataset.id);
+                
+                if (confirm("¿Estás seguro de eliminar este anuncio?")) {
+                    // a. Obtener lista actual
+                    const anuncios = getAnuncios(comunidadId);
+                    // b. Filtrar (quitar el que tenga ese ID)
+                    const nuevosAnuncios = anuncios.filter(a => a.id !== idAnuncio);
+                    // c. Guardar nueva lista
+                    saveAnuncios(comunidadId, nuevosAnuncios);
+                    // d. Refrescar la pantalla
+                    renderizarAnuncios();
+                }
+            }
+        });
     }
 });
     
