@@ -12,7 +12,7 @@ const __dirname = resolve(__filename, '..');
 // Función para generar la lista de archivos HTML
 function getHtmlEntries() {
   const views = [
-    'dashboard-comunidad',
+    "dashboard-comunidad",
     'editar-comunidad',
     'editar-residente',
     'nueva-comunidad',
@@ -21,6 +21,7 @@ function getHtmlEntries() {
     'selector-comunidad',
     'registro',
     'pagos-gastos',
+    "nuevo-anuncio",
    
   ];
 

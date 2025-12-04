@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const linkDashboard = document.getElementById("link-dashboard");
     const linkResidentes = document.getElementById("link-residentes");
     const linkPagosGastos = document.getElementById("link-pagos-gastos");
+    const enviarAnuncioLink = document.getElementById("enviar-anuncio-link");
     
     // Referencia de Stats
     const totalResidentesStat = document.getElementById("total-residentes-stat");
@@ -79,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (linkDashboard) linkDashboard.href = `../dashboard-comunidad/dashboard-comunidad.html${comunidadHref}`;
     if (linkResidentes) linkResidentes.href = `../residentes/residentes.html${comunidadHref}`;
     if (linkPagosGastos) linkPagosGastos.href = `../pagos-gastos/pagos-gastos.html${comunidadHref}`;
+    if (enviarAnuncioLink) enviarAnuncioLink.href = `../nuevo-anuncio/nuevo-anuncio.html${comunidadHref}`;
 
     // 2. Limpiar y Activar Color
     limpiarClasesActivas(linkResidentes);

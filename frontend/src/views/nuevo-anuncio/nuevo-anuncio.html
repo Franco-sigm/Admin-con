@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Anuncio</title>
+    <link rel="stylesheet" href="/src/css/main.css">
+    
+</head>
+<body class="flex bg-gray-50 min-h-screen">
+
+    <main class="flex-1 overflow-y-auto p-8">
+
+        <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg mt-10">
+            <h1 id="form-title" class="text-3xl font-bold text-gray-900 mb-2">
+                Publicar Anuncio
+            </h1>
+            <p class="text-gray-600 mb-8">Este mensaje será visible para todos los residentes.</p>
+
+            <form id="anuncio-form" class="space-y-6">
+
+                <div>
+                    <label for="titulo" class="block text-sm font-medium text-gray-700">Título del Anuncio</label>
+                    <input type="text" id="titulo" name="titulo" required
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Ej: Corte de agua programado">
+                </div>
+
+                <div>
+                    <label for="prioridad" class="block text-sm font-medium text-gray-700">Prioridad</label>
+                    <select id="prioridad" name="prioridad" required
+                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="normal">Normal (Informativo)</option>
+                        <option value="alta">Alta (Urgente / Importante)</option>
+                        <option value="baja">Baja (Recordatorio)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="mensaje" class="block text-sm font-medium text-gray-700">Contenido del Mensaje</label>
+                    <textarea id="mensaje" name="mensaje" rows="4" required
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Escribe los detalles aquí..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-4">
+                    <button type="button" id="btn-cancelar"
+                        class="py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium shadow-sm">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-md hover:bg-blue-700">
+                        Publicar Anuncio
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </main>
+   <script type="module" src="./nuevo-anuncio.js"></script> 
+</body>
+</html>
