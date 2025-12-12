@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 # Formato: mysql+pymysql://usuario:password@host:PUERTO/nombre_base_datos
 # --------------------------------------------------------------------------
 
-# Fíjate que añadimos ":3307" después de localhost
+# ":3307" después de localhost
 SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:admin123@localhost:3307/admin_condominios"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
