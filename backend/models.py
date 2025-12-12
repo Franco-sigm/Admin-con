@@ -9,9 +9,9 @@ class Comunidad(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(100))
-    direccion = Column(String(200))
-
-    # Relaciones: Esto le dice a Python "una comunidad tiene muchos residentes/transacciones/anuncios"
+    direccion = Column(String(200), nullable=True)
+    tipo = Column(String(50), nullable=True)
+    unidades_totales = Column(Integer, nullable=True)
     residentes = relationship("Residente", back_populates="comunidad")
     transacciones = relationship("Transaccion", back_populates="comunidad")
     anuncios = relationship("Anuncio", back_populates="comunidad")
@@ -23,10 +23,8 @@ class Residente(Base):
     id = Column(Integer, primary_key=True, index=True)
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"))
     nombre = Column(String(100))
-    email = Column(String(100))
-    telefono = Column(String(20))
     unidad = Column(String(20))
-    # ENUM debe coincidir con lo que creaste en MySQL
+    telefono = Column(String(20), nullable=True)
     estado_pago = Column(Enum('AL_DIA', 'MOROSO'), default='AL_DIA')
 
     # Relación inversa: "Este residente pertenece a una comunidad"
@@ -39,8 +37,8 @@ class Transaccion(Base):
     id = Column(Integer, primary_key=True, index=True)
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"))
     tipo = Column(Enum('INGRESO', 'EGRESO'))
+    descripcion = Column(String(255), nullable=True)
     monto = Column(Integer)
-    descripcion = Column(String(255))
     fecha = Column(Date)
 
     comunidad = relationship("Comunidad", back_populates="transacciones")
@@ -52,8 +50,8 @@ class Anuncio(Base):
     id = Column(Integer, primary_key=True, index=True)
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"))
     titulo = Column(String(150))
-    mensaje = Column(Text)
     prioridad = Column(Enum('alta', 'normal', 'baja'), default='normal')
+    mensaje = Column(Text)
     fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
 
     comunidad = relationship("Comunidad", back_populates="anuncios")
