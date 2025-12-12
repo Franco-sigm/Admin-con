@@ -23,6 +23,8 @@ class PrioridadAnuncio(str, Enum):
 class ComunidadBase(BaseModel):
     nombre: str
     direccion: Optional[str] = None
+    tipo: Optional[str] = None
+    unidades_totales: Optional[int] = None
 
 class ComunidadCreate(ComunidadBase):
     pass
@@ -39,6 +41,11 @@ class ResidenteBase(BaseModel):
     nombre: str
     unidad: str
     telefono: Optional[str] = None
+    estado_pago: EstadoPago = EstadoPago.AL_DIA
+
+
+class ResidenteCreate(ResidenteBase):
+    comunidad_id: int
     
 
 # Schema de lectura hereda del Base (lo que el cliente verá)
@@ -53,8 +60,8 @@ class Residente(ResidenteBase):
 # --- 3. SCHEMAS DE TRANSACCIONES ---
 class TransaccionBase(BaseModel):
     tipo: TipoTransaccion
-    monto: int
     descripcion: Optional[str] = None
+    monto: int
     fecha: date
 
 class TransaccionCreate(TransaccionBase):
@@ -71,8 +78,9 @@ class Transaccion(TransaccionBase):
 # --- 4. SCHEMAS DE ANUNCIOS ---
 class AnuncioBase(BaseModel):
     titulo: str
-    mensaje: str
     prioridad: PrioridadAnuncio = PrioridadAnuncio.normal
+    mensaje: str
+    
 
 class AnuncioCreate(AnuncioBase):
     comunidad_id: int
