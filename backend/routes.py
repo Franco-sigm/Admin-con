@@ -28,7 +28,7 @@ def create_comunidad(comunidad: schemas.ComunidadCreate, db: Session = Depends(g
 def read_comunidades(db: Session = Depends(get_db)):
     return db.query(models.Comunidad).all()
 
-# actualizar comunidad
+# actualizar comunidadij
 @router.put("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
 def update_comunidad(comunidad_id: int, comunidad: schemas.ComunidadCreate, db: Session = Depends(get_db)):
     # Buscamos la comunidad por ID

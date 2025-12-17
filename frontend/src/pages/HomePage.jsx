@@ -113,8 +113,7 @@ function HomePage() {
       await client.delete(`/comunidades/${id}`)
       
       setComunidades(comunidades.filter(c => c.id !== id))
-      alert("✅ Comunidad eliminada")
-
+      
     } catch (error) {
       console.error("❌ ERROR AL ELIMINAR:", error)
       if (error.response) {
