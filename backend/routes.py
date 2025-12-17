@@ -28,6 +28,7 @@ def create_comunidad(comunidad: schemas.ComunidadCreate, db: Session = Depends(g
 def read_comunidades(db: Session = Depends(get_db)):
     return db.query(models.Comunidad).all()
 
+# actualizar comunidad
 @router.put("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
 def update_comunidad(comunidad_id: int, comunidad: schemas.ComunidadCreate, db: Session = Depends(get_db)):
     # Buscamos la comunidad por ID
@@ -44,6 +45,7 @@ def update_comunidad(comunidad_id: int, comunidad: schemas.ComunidadCreate, db: 
     db.refresh(db_comunidad)
     return db_comunidad
 
+#borrar comunidad
 @router.delete("/comunidades/{comunidad_id}")
 def delete_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
     # Buscamos la comunidad

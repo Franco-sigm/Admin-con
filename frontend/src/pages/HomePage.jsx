@@ -147,6 +147,19 @@ function HomePage() {
                 + Nueva Comunidad
             </button>
       </div>
+      {comunidades.length === 0 ? (
+        
+        // 1. SI ESTÁ VACÍO: Mostramos el cartel de bienvenida
+        <div className="flex flex-col items-center justify-center py-20 bg-white border-2 border-dashed border-gray-300 rounded-xl">
+           <div className="text-6xl mb-4">🏢</div>
+           <h3 className="text-xl font-bold text-gray-700">Aún no hay comunidades</h3>
+           <p className="text-gray-500 mt-2 text-center max-w-sm">
+             ¡Bienvenido! Parece que aún no has agregado ningún condominio. <br/>
+             Haz clic en el botón <strong>"+ Nueva Comunidad"</strong> para comenzar a administrar tus comunidades.
+           </p>
+        </div>
+
+      ) : (
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {comunidades.map(comunidad => (
@@ -198,6 +211,7 @@ function HomePage() {
           </Link>
         ))}
       </div>
+      )}
 
       
       
