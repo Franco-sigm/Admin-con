@@ -35,69 +35,95 @@ function HomePage() {
     })
   }
 
-  const manejarEnvio = async (e) => {
+ const guardarComunidad = async (e) => {
     e.preventDefault()
     
-    try {
-        const datosAEnviar = {
-            ...nuevaComunidad,
-            unidades_totales: parseInt(nuevaComunidad.unidades_totales)
-        }
-
-        if (idEdicion) {
-            // --- MODO EDICIÓN (PUT) ---
-            await client.put(`/comunidades/${idEdicion}`, datosAEnviar)
-            alert("¡Comunidad actualizada!")
-        } else {
-            // --- MODO CREACIÓN (POST) ---
-            await client.post('/comunidades', datosAEnviar)
-            alert("¡Comunidad creada!")
-        }
-
-        // Limpieza final (común para ambos)
-        setMostrarModal(false)
-        setNuevaComunidad({ nombre: '', direccion: '', tipo: 'Edificio', unidades_totales: '' })
-        setIdEdicion(null) // <--- Reseteamos el modo edición
-        cargarComunidades()
-
-    } catch (error) {
-        console.error("Error:", error)
-        alert("Ocurrió un error al guardar.")
-    }
-}
-  // funcion para eliminar comunidad
-  const eliminarComunidad = async (e, id) => {
-    e.preventDefault() // <--- IMPORTANTE: Evita que entre al link
-    
-    if (!confirm("¿Estás seguro de eliminar esta comunidad?")) return
+    // 1. Verificar qué datos vamos a enviar
+    console.log("--- INTENTANDO GUARDAR ---")
+    console.log("Modo:", idEdicion ? "EDITAR (PUT)" : "CREAR (POST)")
+    console.log("ID a editar:", idEdicion)
+    console.log("Datos del formulario:", nuevaComunidad)
 
     try {
-        await client.delete(`/comunidades/${id}`)
-        cargarComunidades() // Recargar la lista
-    } catch (error) {
-        console.error("Error eliminando:", error)
-        alert("No se pudo eliminar")
-    }
-}
+      const datosAEnviar = {
+        ...nuevaComunidad,
+        unidades_totales: parseInt(nuevaComunidad.unidades_totales)
+      }
 
-// funcion para editar comunidad
-const cargarDatosEdicion = (e, comunidad) => {
-    e.preventDefault() // <--- IMPORTANTE: Evita entrar al link
+      if (idEdicion) {
+         // PUT
+         console.log(`Enviando PUT a: /comunidades/${idEdicion}`)
+         await client.put(`/comunidades/${idEdicion}`, datosAEnviar)
+         alert("✅ ¡Comunidad actualizada correctamente!")
+      } else {
+         // POST
+         console.log("Enviando POST a: /comunidades")
+         await client.post('/comunidades', datosAEnviar)
+         alert("✅ ¡Comunidad creada correctamente!")
+      }
+      
+      setMostrarModal(false)
+      setNuevaComunidad({ nombre: '', direccion: '', tipo: 'Edificio', unidades_totales: '' })
+      setIdEdicion(null)
+      cargarComunidades()
+
+    } catch (error) {
+      console.error("❌ ERROR GRAVE:", error)
+      
+      // ESTO ES LO IMPORTANTE: ¿Qué dice el servidor?
+      if (error.response) {
+          console.error("STATUS:", error.response.status) // Ej: 404, 500
+          console.error("MENSAJE DEL SERVER:", error.response.data)
+          alert(`Error del Servidor (${error.response.status}): Revisa la consola (F12)`)
+      } else {
+          alert("Error de conexión: El backend no responde o la URL está mal.")
+      }
+    }
+  }
+// 1. PREPARAR EDICIÓN: Llena el formulario con los datos de la tarjeta
+  const cargarDatosEdicion = (e, comunidad) => {
+    e.preventDefault() // <--- VITAL: Evita entrar al Link
+    e.stopPropagation() // <--- VITAL: Doble seguridad
+
+    setIdEdicion(comunidad.id) // Guardamos el ID que vamos a editar
     
-    // 1. Rellenamos el formulario con los datos de la tarjeta
+    // Rellenamos el formulario visualmente
     setNuevaComunidad({
-        nombre: comunidad.nombre,
-        direccion: comunidad.direccion,
-        tipo: comunidad.tipo,
-        unidades_totales: comunidad.unidades_totales
+      nombre: comunidad.nombre,
+      direccion: comunidad.direccion,
+      tipo: comunidad.tipo,
+      unidades_totales: comunidad.unidades_totales
     })
     
-    // 2. Guardamos el ID que estamos editando
-    setIdEdicion(comunidad.id)
-    
-    // 3. Abrimos el modal
-    setMostrarModal(true)
-}
+    setMostrarModal(true) // Abrimos el modal
+  }
+
+ // --- FUNCIÓN DEPURADA PARA ELIMINAR ---
+  const eliminarComunidad = async (e, id) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    console.log("--- INTENTANDO ELIMINAR ---")
+    console.log("ID recibido:", id) // <--- SI ESTO ES 'undefined', AHÍ ESTÁ EL ERROR
+
+    if (!confirm("¿Estás seguro de eliminar?")) return
+
+    try {
+      console.log(`Enviando DELETE a: /comunidades/${id}`)
+      await client.delete(`/comunidades/${id}`)
+      
+      setComunidades(comunidades.filter(c => c.id !== id))
+      alert("✅ Comunidad eliminada")
+
+    } catch (error) {
+      console.error("❌ ERROR AL ELIMINAR:", error)
+      if (error.response) {
+        alert(`Error del Servidor (${error.response.status}): Posiblemente la ruta DELETE no existe.`)
+      } else {
+        alert("Error de conexión.")
+      }
+    }
+  }
 
   return (
     
@@ -109,12 +135,17 @@ const cargarDatosEdicion = (e, comunidad) => {
            <h1 className="text-3xl font-bold text-gray-800">Mis Condominios</h1>
            <p className="text-gray-500">Selecciona una comunidad para administrar</p>
         </div>
-        <button 
-          onClick={() => setMostrarModal(true)}
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow hover:bg-blue-700 transition font-semibold"
-        >
-          + Nueva Comunidad
-        </button>
+            <button 
+                onClick={() => {
+                  // Limpiamos datos viejos y quitamos el ID de edición
+                  setNuevaComunidad({ nombre: '', direccion: '', tipo: 'Edificio', unidades_totales: '' })
+                  setIdEdicion(null) 
+                  setMostrarModal(true)
+                }}
+                className="bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow hover:bg-blue-700 transition font-semibold"
+              >
+                + Nueva Comunidad
+            </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -175,13 +206,14 @@ const cargarDatosEdicion = (e, comunidad) => {
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-            
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-800">Nueva Comunidad</h3>
-              <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-red-500 text-2xl leading-none">&times;</button>
-            </div>
+           <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-lg font-bold text-gray-800">
+              {idEdicion ? 'Editar Comunidad' : 'Nueva Comunidad'}
+            </h3>
+            <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-red-500 text-2xl leading-none">&times;</button>
+          </div>  
 
-            <form onSubmit={manejarEnvio} className="p-6">
+            <form onSubmit={guardarComunidad} className="p-6">
               
               {/* CAMPO 1: NOMBRE */}
               <div className="mb-4">
@@ -250,12 +282,14 @@ const cargarDatosEdicion = (e, comunidad) => {
                 >
                   Cancelar
                 </button>
+              {/* --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE --- */}
                 <button 
                   type="submit" 
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition"
                 >
-                  Guardar Comunidad
+                  {idEdicion ? 'Guardar Cambios' : 'Crear Comunidad'}
                 </button>
+                {/* -------------------------------------- */}
               </div>
 
             </form>

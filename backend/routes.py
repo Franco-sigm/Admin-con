@@ -28,6 +28,35 @@ def create_comunidad(comunidad: schemas.ComunidadCreate, db: Session = Depends(g
 def read_comunidades(db: Session = Depends(get_db)):
     return db.query(models.Comunidad).all()
 
+@router.put("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
+def update_comunidad(comunidad_id: int, comunidad: schemas.ComunidadCreate, db: Session = Depends(get_db)):
+    # Buscamos la comunidad por ID
+    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
+    
+    if db_comunidad is None:
+        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
+
+    # Actualizamos los campos con los nuevos datos
+    for key, value in comunidad.dict().items():
+        setattr(db_comunidad, key, value)
+
+    db.commit()
+    db.refresh(db_comunidad)
+    return db_comunidad
+
+@router.delete("/comunidades/{comunidad_id}")
+def delete_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
+    # Buscamos la comunidad
+    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
+    
+    if db_comunidad is None:
+        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
+
+    # La borramos
+    db.delete(db_comunidad)
+    db.commit()
+    
+    return {"message": "Comunidad eliminada correctamente"}
 
 # ==========================================
 #  RESIDENTES
