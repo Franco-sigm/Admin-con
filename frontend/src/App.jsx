@@ -33,6 +33,7 @@ function App() {
           {/* Aquí irán todas las opciones del sidebar */}
           <Route path="residentes" element={<ResidentesPage />} />
           {/* <Route path="gastos" element={<GastosPage />} /> */}
+          
         </Route>
 
       </Routes>
