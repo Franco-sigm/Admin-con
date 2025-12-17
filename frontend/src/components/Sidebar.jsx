@@ -16,6 +16,13 @@ function Sidebar({ comunidadId }) {
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
+
+          <Link 
+          to={`/comunidad/${comunidadId}/espacios`}
+          className="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+           Dashboard
+        </Link>
         {/* Link a Residentes */}
         <Link 
           to={`/comunidad/${comunidadId}/residentes`}
@@ -25,23 +32,18 @@ function Sidebar({ comunidadId }) {
               : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
-          👥 Residentes
+          👥 detalle Residentes
         </Link>
 
-        {/* Aquí irás agregando más módulos */}
+        {/* Aquí se ira agregando más módulos */}
         <Link 
           to={`/comunidad/${comunidadId}/gastos`}
           className="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
         >
-          💰 Gastos Comunes
+          💰 ingresos y egresos
         </Link>
         
-        <Link 
-          to={`/comunidad/${comunidadId}/espacios`}
-          className="flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          🏊 Áreas Comunes
-        </Link>
+      
       </nav>
 
       <div className="p-4 border-t">

@@ -5,8 +5,9 @@ import client from '../api/client'
 function HomePage() {
   const [comunidades, setComunidades] = useState([])
   const [mostrarModal, setMostrarModal] = useState(false)
+  const [idEdicion, setIdEdicion] = useState(null)
 
-  // 1. ESTADO ACTUALIZADO SEGÚN TU BASE DE DATOS
+  // 1. ESTADO ACTUALIZADO SEGÚN  BASE DE DATOS
   const [nuevaComunidad, setNuevaComunidad] = useState({
     nombre: '',
     direccion: '',
@@ -34,31 +35,73 @@ function HomePage() {
     })
   }
 
-  const crearComunidad = async (e) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault()
+    
     try {
-      // 2. ENVIAMOS LOS DATOS EXACTOS QUE PIDE TU DB
-      // Convertimos unidades_totales a número entero por seguridad (parseInt)
-      const datosAEnviar = {
-        ...nuevaComunidad,
-        unidades_totales: parseInt(nuevaComunidad.unidades_totales)
-      }
+        const datosAEnviar = {
+            ...nuevaComunidad,
+            unidades_totales: parseInt(nuevaComunidad.unidades_totales)
+        }
 
-      await client.post('/comunidades', datosAEnviar)
-      
-      // Limpiamos y recargamos
-      setMostrarModal(false)
-      setNuevaComunidad({ nombre: '', direccion: '', tipo: 'Edificio', unidades_totales: '' })
-      cargarComunidades() // Recargamos la lista real desde la DB
-      alert("¡Comunidad creada con éxito!")
+        if (idEdicion) {
+            // --- MODO EDICIÓN (PUT) ---
+            await client.put(`/comunidades/${idEdicion}`, datosAEnviar)
+            alert("¡Comunidad actualizada!")
+        } else {
+            // --- MODO CREACIÓN (POST) ---
+            await client.post('/comunidades', datosAEnviar)
+            alert("¡Comunidad creada!")
+        }
+
+        // Limpieza final (común para ambos)
+        setMostrarModal(false)
+        setNuevaComunidad({ nombre: '', direccion: '', tipo: 'Edificio', unidades_totales: '' })
+        setIdEdicion(null) // <--- Reseteamos el modo edición
+        cargarComunidades()
 
     } catch (error) {
-      console.error("Error creando:", error)
-      alert("Error al crear. Revisa que el backend esté recibiendo bien los datos.")
+        console.error("Error:", error)
+        alert("Ocurrió un error al guardar.")
     }
-  }
+}
+  // funcion para eliminar comunidad
+  const eliminarComunidad = async (e, id) => {
+    e.preventDefault() // <--- IMPORTANTE: Evita que entre al link
+    
+    if (!confirm("¿Estás seguro de eliminar esta comunidad?")) return
+
+    try {
+        await client.delete(`/comunidades/${id}`)
+        cargarComunidades() // Recargar la lista
+    } catch (error) {
+        console.error("Error eliminando:", error)
+        alert("No se pudo eliminar")
+    }
+}
+
+// funcion para editar comunidad
+const cargarDatosEdicion = (e, comunidad) => {
+    e.preventDefault() // <--- IMPORTANTE: Evita entrar al link
+    
+    // 1. Rellenamos el formulario con los datos de la tarjeta
+    setNuevaComunidad({
+        nombre: comunidad.nombre,
+        direccion: comunidad.direccion,
+        tipo: comunidad.tipo,
+        unidades_totales: comunidad.unidades_totales
+    })
+    
+    // 2. Guardamos el ID que estamos editando
+    setIdEdicion(comunidad.id)
+    
+    // 3. Abrimos el modal
+    setMostrarModal(true)
+}
 
   return (
+    
+    
     <div className="container mx-auto p-10">
       
       <div className="flex justify-between items-center mb-8">
@@ -76,11 +119,31 @@ function HomePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {comunidades.map(comunidad => (
-          <Link key={comunidad.id} to={`/comunidad/${comunidad.id}/residentes`} className="block group h-full">
+          <Link key={comunidad.id} to={`/comunidad/${comunidad.id}/residentes`} className="block group h-full relative">
             <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition border border-gray-100 overflow-hidden h-full flex flex-col">
+                      {/* --- BOTONES DE ACCIÓN (FLOTANTES) --- */}
+              <div className="absolute top-2 right-2 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Botón Editar */}
+                  <button 
+                    onClick={(e) => cargarDatosEdicion(e, comunidad)}
+                    className="bg-white p-2 rounded-full shadow hover:bg-yellow-100 text-yellow-600 transition"
+                    title="Editar"
+                  >
+                    ✏️
+                  </button>
+
+                  {/* Botón Eliminar */}
+                  <button 
+                    onClick={(e) => eliminarComunidad(e, comunidad.id)}
+                    className="bg-white p-2 rounded-full shadow hover:bg-red-100 text-red-600 transition"
+                    title="Eliminar"
+                  >
+                    🗑️
+                  </button>
+              </div>
               {/* Encabezado de color según el TIPO */}
               <div className={`h-24 flex items-center justify-center text-white text-4xl
-                ${comunidad.tipo === 'Casa' ? 'bg-green-500' : 'bg-blue-600'}`}>
+                ${comunidad.tipo === 'Casa' ? 'bg-green-500' : 'bg-gray-600'}`}>
                  {comunidad.tipo === 'Casa' ? '🏡' : '🏢'}
               </div>
 
@@ -105,7 +168,10 @@ function HomePage() {
         ))}
       </div>
 
-      {/* --- MODAL DE CREACIÓN --- */}
+      
+      
+      
+      {/* --- MODAL DE CREACIÓN de nueva comunidad --- */}
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -115,7 +181,7 @@ function HomePage() {
               <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-red-500 text-2xl leading-none">&times;</button>
             </div>
 
-            <form onSubmit={crearComunidad} className="p-6">
+            <form onSubmit={manejarEnvio} className="p-6">
               
               {/* CAMPO 1: NOMBRE */}
               <div className="mb-4">
