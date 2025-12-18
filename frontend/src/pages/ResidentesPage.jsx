@@ -1,96 +1,213 @@
 import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom' 
 import client from '../api/client'
 
 function ResidentesPage() {
-  const [residentes, setResidentes] = useState([])
-  const [cargando, setCargando] = useState(true)
+  const { id } = useParams() 
   
-  // Estado para el Modal y el Formulario
+  const [residentes, setResidentes] = useState([])
+  const [idEdicion, setIdEdicion] = useState(null)
+  const [cargando, setCargando] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
-  const [nuevoResidente, setNuevoResidente] = useState({
-    comunidad_id: '',// Asumimos que trabajarás en la comunidad 1 por ahora
-    nombre_completo: '',
+  const [formResidente, setFormResidente] = useState({
+    id: null,
+    nombre: '',
     unidad: '',
+    email: '',
     telefono: '',
-    estado_pago: '',
+    estado_pago: 'AL_DIA'
   })
 
-  // Cargar datos al inicio
+  
+
+ 
+// --- CARGAR DATOS ---
   useEffect(() => {
-    cargarResidentes()
-  }, [])
+    if (id) cargarResidentes()
+  }, [id])
 
   const cargarResidentes = async () => {
     try {
-      const respuesta = await client.get('/residentes')
+      setCargando(true)
+      const respuesta = await client.get(`/residentes?comunidad_id=${id}`)
       setResidentes(respuesta.data)
-      setCargando(false)
     } catch (error) {
       console.error("Error cargando:", error)
+    } finally {
       setCargando(false)
     }
   }
 
-  // Manejar cambios en los inputs del formulario
+  // --- MANEJO DEL FORMULARIO (CORREGIDO) ---
+  
+  // 1. INPUT CHANGE: Ahora actualiza 'formResidente' (NO 'nuevoResidente')
   const handleInputChange = (e) => {
-    setNuevoResidente({
-      ...nuevoResidente,
+    setFormResidente({
+      ...formResidente,
       [e.target.name]: e.target.value
     })
   }
 
-  // Enviar datos al Backend
-  const crearResidente = async (e) => {
-    e.preventDefault() // Evitar que se recargue la página
+  // 2. PREPARAR EDICIÓN
+  const handleEditar = (residente) => {
+    console.log("✏️ Click en Editar. Datos:", residente)
+    if (!residente.id) alert("⚠️ ALERTA: Residente sin ID.")
+    
+    setFormResidente(residente) 
+    setMostrarModal(true)       
+  }
+
+  // 3. CERRAR MODAL Y LIMPIAR
+  const cerrarModal = () => {
+    setMostrarModal(false)
+    // Reseteamos el formulario único
+    setFormResidente({ id: null, nombre: '', unidad: '', email: '', telefono: '', estado_pago: 'AL_DIA' })
+  }
+
+  // 4. GUARDAR MAESTRO (Crea o Edita según corresponda)
+  // Nota: Eliminé la función 'crearResidente' porque esta ya hace todo.
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const comunidadIdNum = parseInt(id) 
+
+    console.log("💾 Guardando:", formResidente)
+
     try {
-      await client.post('/residentes', nuevoResidente)
+      const datosAEnviar = { 
+        nombre: formResidente.nombre,
+        unidad: formResidente.unidad,
+        email: formResidente.email,
+        telefono: formResidente.telefono,
+        estado_pago: formResidente.estado_pago,
+        comunidad_id: comunidadIdNum
+      }
+
+      if (formResidente.id) {
+        // --- EDITAR (PUT) ---
+        console.log(`🔄 Editando ID: ${formResidente.id}`)
+        await client.put(`/residentes/${formResidente.id}`, datosAEnviar)
+        alert("✅ Actualizado correctamente")
+      } else {
+        // --- CREAR (POST) ---
+        console.log("✨ Creando nuevo")
+        await client.post('/residentes', datosAEnviar)
+        alert("✅ Creado correctamente")
+      }
       
-      // Si funciona: cerramos modal, limpiamos form y recargamos lista
-      setMostrarModal(false)
-      setNuevoResidente({comunidad_id: '', nombre_completo: '', unidad: '', telefono: '', estado_pago: ''})
-      cargarResidentes() // ¡Recarga mágica sin F5!
-      alert("Residente creado con éxito ✨")
+      cerrarModal()     // Cierra y limpia
+      cargarResidentes() // Recarga la tabla
       
     } catch (error) {
-      console.error("Error creando:", error)
-      alert("Error al crear residente. Revisa la consola.")
+      console.error("❌ Error guardando:", error)
+      alert("Error al guardar. Revisa la consola.")
     }
   }
 
+  // --- ELIMINAR ---
+  const handleEliminar = async (residenteId) => {
+    if (!window.confirm("¿Seguro de eliminar?")) return;
+
+    try {
+      await client.delete(`/residentes/${residenteId}`)
+      alert("🗑️ Eliminado")
+      cargarResidentes()
+    } catch (error) {
+      console.error("❌ Error eliminando:", error)
+      alert("Error al eliminar.")
+    }
+  }
   return (
-    <div className="mt-8 relative">
+    <div className="mt-2 relative">
+      
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">👥 Gestión de Residentes</h2>
+        <div>
+            <h2 className="text-2xl font-bold text-gray-800">👥 Padrón de Residentes</h2>
+            <p className="text-gray-500 text-sm">Listado de propietarios y arrendatarios</p>
+        </div>
         <button 
-          onClick={() => setMostrarModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition"
+          onClick={() => { 
+            // 1. Limpiamos el formulario usando la variable CORRECTA (formResidente)
+            setFormResidente({ 
+                id: null, // Importante: null significa "Crear Nuevo"
+                nombre: '', 
+                unidad: '', 
+                email: '', 
+                telefono: '', 
+                estado_pago: 'AL_DIA' 
+            }); 
+            // 2. Abrimos el modal
+            setMostrarModal(true); 
+          }}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition flex items-center gap-2"
         >
-          + Nuevo Residente
+          <span>+</span> Nuevo Residente
         </button>
       </div>
 
-      {/* --- TABLA (Igual que antes) --- */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* TABLA DE 5 COLUMNAS */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {cargando ? (
-          <div className="p-8 text-center text-gray-500">Cargando datos... ⏳</div>
+          <div className="p-12 text-center text-gray-400"><p>Cargando datos...</p></div>
+        ) : residentes.length === 0 ? (
+           <div className="p-12 text-center text-gray-400"><p>Aún no hay residentes.</p></div>
         ) : (
           <table className="min-w-full leading-normal">
             <thead>
               <tr>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nombre</th>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Unidad</th>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unidad</th>
+                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
+                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Teléfono</th>
+                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-100">
               {residentes.map((res) => (
-                <tr key={res.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-5 border-b border-gray-200 text-sm font-medium">{res.comunidad_id}</td>
-                  <td className="px-5 py-5 border-b border-gray-200 text-sm font-medium">{res.nombre_completo}</td>
-                  <td className="px-5 py-5 border-b border-gray-200 text-sm">{res.unidad}</td>
-                  <td className="px-5 py-5 border-b border-gray-200 text-sm text-gray-500">{res.telefono}</td>
-                  <td className="px-5 py-5 border-b border-gray-200 text-sm font-medium">{res.nombre_completo}</td>
-                  <td className="px-5 py-5 border-b border-gray-200 text-sm font-medium">{res.estado_pago}</td>
+                <tr key={res.id} className="hover:bg-gray-50 transition">
+                  <td className="px-5 py-4 whitespace-no-wrap text-sm font-bold text-gray-700">{res.unidad}</td>
+                  
+                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-gray-600">
+                      <div className="flex items-center gap-3">
+                        {res.nombre}
+                      </div>
+                  </td>
+
+                  {/* Nueva Columna Email */}
+                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-gray-500">{res.email || '-'}</td>
+
+                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-gray-500">{res.telefono || '-'}</td>
+
+                  <td className="px-5 py-4 whitespace-no-wrap text-sm">
+                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${res.estado_pago === 'MOROSO' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                      {res.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
+                    </span>
+                  </td>
+                  {/* --- NUEVA COLUMNA DE BOTONES --- */}
+                  
+                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-center">
+                    <div className="flex items-center justify-center gap-2">
+                        {/* Botón Editar */}
+                        <button 
+                          onClick={() => handleEditar(res)}
+                          className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg transition"
+                          title="Editar"
+                        >
+                          ✏️
+                        </button>
+                        
+                        {/* Botón Eliminar */}
+                        <button 
+                          onClick={() => handleEliminar(res.id)}
+                          className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition"
+                          title="Eliminar"
+                        >
+                          🗑️
+                        </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -98,60 +215,100 @@ function ResidentesPage() {
         )}
       </div>
 
-      {/* --- MODAL (Ventana Flotante) --- */}
+      {/* --- MODAL --- */}
       {mostrarModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-            <h3 className="text-xl font-bold mb-4">Agregar Nuevo Residente</h3>
-            <form onSubmit={crearResidente}>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Nombre Completo</label>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                 <h3 className="text-lg font-bold text-gray-800"></h3>
+                   {formResidente.id ? 'Editar Residente' : 'Nuevo Residente'}
+
+            </div>
+            
+           <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              
+              {/* CAMPO 1: NOMBRE */}
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1">Nombre</label>
                 <input 
                   type="text" 
-                  name="nombre_completo"
-                  value={nuevoResidente.nombre_completo}
+                  name="nombre" 
+                  value={formResidente.nombre} // ✅ Correcto
                   onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required 
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  required placeholder="Ej: Juan Pérez" 
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Unidad (Depto/Casa)</label>
+
+              {/* CAMPO 2: UNIDAD */}
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1">Unidad</label>
                 <input 
                   type="text" 
-                  name="unidad"
-                  value={nuevoResidente.unidad}
+                  name="unidad" 
+                  value={formResidente.unidad} // ✅ Cambiado de nuevoResidente a formResidente
                   onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required 
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  required placeholder="Ej: 104-B" 
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
+
+              {/* CAMPO 3: EMAIL */}
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1">Email</label>
                 <input 
                   type="email" 
-                  name="email"
-                  value={nuevoResidente.email}
+                  name="email" 
+                  value={formResidente.email} // ✅ Cambiado de nuevoResidente a formResidente
                   onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required 
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="juan@correo.com" 
                 />
               </div>
+
+              {/* CAMPO 4: TELÉFONO */}
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1">Teléfono</label>
+                <input 
+                  type="text" 
+                  name="telefono" 
+                  value={formResidente.telefono} // ✅ Cambiado de nuevoResidente a formResidente
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="+56 9 ..." 
+                />
+              </div>
+
+               {/* CAMPO 5: ESTADO PAGO */}
+               <div>
+                <label className="block text-gray-700 text-sm font-bold mb-1">Estado Pago</label>
+                <select 
+                  name="estado_pago" 
+                  value={formResidente.estado_pago} // ✅ Cambiado de nuevoResidente a formResidente
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                >
+                  <option value="AL_DIA">Al Día</option>
+                  <option value="MOROSO">Moroso</option>
+                </select>
+              </div>
               
-              {/* Botones de Acción */}
-              <div className="flex justify-end gap-2 mt-6">
+              {/* 2. BOTONES DINÁMICOS */}
+              <div className="flex justify-end gap-3 mt-6">
                 <button 
-                  type="button"
-                  onClick={() => setMostrarModal(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                  type="button" 
+                  onClick={cerrarModal}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
                 >
                   Cancelar
                 </button>
+                
                 <button 
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition font-bold"
                 >
-                  Guardar
+                  {/* ¿Tiene ID? Cambiamos el texto del botón */}
+                  {formResidente.id ? 'Actualizar Cambios' : 'Guardar Residente'}
                 </button>
               </div>
             </form>

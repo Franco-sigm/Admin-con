@@ -39,6 +39,7 @@ class Comunidad(ComunidadBase):
 # --- 2. SCHEMAS DE RESIDENTES ---
 class ResidenteBase(BaseModel):
     nombre: str
+    email: Optional[str] = None
     unidad: str
     telefono: Optional[str] = None
     estado_pago: EstadoPago = EstadoPago.AL_DIA

@@ -23,6 +23,7 @@ class Residente(Base):
     id = Column(Integer, primary_key=True, index=True)
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"))
     nombre = Column(String(100))
+    email = Column(String(150))
     unidad = Column(String(20))
     telefono = Column(String(20), nullable=True)
     estado_pago = Column(Enum('AL_DIA', 'MOROSO'), default='AL_DIA')

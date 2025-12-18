@@ -64,6 +64,32 @@ def delete_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
 #  RESIDENTES
 # ==========================================
 
+# 1. ACTUALIZAR (PUT)
+@router.put("/residentes/{residente_id}", response_model=schemas.Residente)
+def update_residente(residente_id: int, residente_actualizado: schemas.ResidenteCreate, db: Session = Depends(get_db)):
+    db_residente = db.query(models.Residente).filter(models.Residente.id == residente_id).first()
+    if not db_residente:
+        raise HTTPException(status_code=404, detail="Residente no encontrado")
+    
+    # Actualizamos los campos
+    for key, value in residente_actualizado.dict().items():
+        setattr(db_residente, key, value)
+
+    db.commit()
+    db.refresh(db_residente)
+    return db_residente
+
+# 2. ELIMINAR (DELETE)
+@router.delete("/residentes/{residente_id}")
+def delete_residente(residente_id: int, db: Session = Depends(get_db)):
+    db_residente = db.query(models.Residente).filter(models.Residente.id == residente_id).first()
+    if not db_residente:
+        raise HTTPException(status_code=404, detail="Residente no encontrado")
+    
+    db.delete(db_residente)
+    db.commit()
+    return {"message": "Residente eliminado exitosamente"}
+
 @router.post("/residentes", response_model=schemas.Residente)
 def create_residente(residente: schemas.ResidenteCreate, db: Session = Depends(get_db)):
     # VALIDACIÓN: Verificar que la comunidad existe antes de guardar al residente
@@ -79,15 +105,25 @@ def create_residente(residente: schemas.ResidenteCreate, db: Session = Depends(g
     db.refresh(nuevo_residente)
     return nuevo_residente
 
-@router.get("/residentes", response_model=List[schemas.Residente])
-def read_residentes(db: Session = Depends(get_db)):
-    return db.query(models.Residente).all()
+
 @router.get("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
 def read_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
     db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
     if db_comunidad is None:
         raise HTTPException(status_code=404, detail="Comunidad no encontrada")
     return db_comunidad
+
+@router.get("/residentes", response_model=List[schemas.Residente])
+def read_residentes(comunidad_id: int = None, db: Session = Depends(get_db)):
+    # Iniciamos la consulta base
+    query = db.query(models.Residente)
+    
+    # SI el frontend nos mandó un ID, filtramos por esa comunidad
+    if comunidad_id:
+        query = query.filter(models.Residente.comunidad_id == comunidad_id)
+        
+    # Devolvemos el resultado (filtrado o todos)
+    return query.all()
 
 
 # ==========================================
