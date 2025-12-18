@@ -162,7 +162,7 @@ function HomePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {comunidades.map(comunidad => (
-          <Link key={comunidad.id} to={`/comunidad/${comunidad.id}/residentes`} className="block group h-full relative">
+          <Link key={comunidad.id} to={`/comunidad/${comunidad.id}`} className="block group h-full relative">
             <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition border border-gray-100 overflow-hidden h-full flex flex-col">
                       {/* --- BOTONES DE ACCIÓN (FLOTANTES) --- */}
               <div className="absolute top-2 right-2 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">

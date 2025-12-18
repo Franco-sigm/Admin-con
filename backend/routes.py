@@ -82,6 +82,12 @@ def create_residente(residente: schemas.ResidenteCreate, db: Session = Depends(g
 @router.get("/residentes", response_model=List[schemas.Residente])
 def read_residentes(db: Session = Depends(get_db)):
     return db.query(models.Residente).all()
+@router.get("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
+def read_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
+    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
+    if db_comunidad is None:
+        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
+    return db_comunidad
 
 
 # ==========================================
