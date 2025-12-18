@@ -5,6 +5,7 @@ import { Routes, Route, Outlet, useParams } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import Sidebar from './components/Sidebar.jsx' 
 import client from './api/client' 
+import LandingPage from './pages/LandingPage.jsx'
 
 // --- PÁGINAS ---
 import HomePage from './pages/HomePage'
@@ -46,7 +47,7 @@ function App() {
 
       <Routes>
         {/* RUTA 1: El Selector de Comunidades (Sin Sidebar) */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LandingPage />} />
 
         {/* RUTA 2: El Interior de la Comunidad (Con Sidebar) */}
         <Route path="/comunidad/:id" element={<DashboardLayout />}>
