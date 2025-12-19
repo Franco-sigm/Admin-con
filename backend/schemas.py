@@ -93,3 +93,42 @@ class Anuncio(AnuncioBase):
 
     class Config:
         from_attributes = True
+
+
+
+
+
+# --- ESQUEMAS DE TOKEN (Lo que devuelve el login) ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+# --- ESQUEMAS DE USUARIO ---
+
+# 1. Base (Datos comunes)
+class UsuarioBase(BaseModel):
+    nombre: str
+    email: str
+    rol: Optional[str] = "CONSERJE" # 'ADMIN_COMUNIDAD' o 'CONSERJE'
+    comunidad_id: Optional[int] = None # Solo si es conserje
+
+# 2. Create (Lo que mandas para registrarte -> Incluye Password)
+class UsuarioCreate(UsuarioBase):
+    password: str
+
+# 3. Response (Lo que devuelve la API -> ¡SIN PASSWORD!)
+class Usuario(UsuarioBase):
+    id: int
+    # Opcional: Si quieres ver qué comunidad creó (solo IDs para no hacer bucle infinito)
+    # comunidades_creadas_ids: List[int] = [] 
+
+    class Config:
+        from_attributes = True
+
+# 4. Login (Lo que envía el formulario de entrada)
+class LoginRequest(BaseModel):
+    email: str
+    password: str

@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import models
 from database import engine
 from routes import router as api_router
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import models, schemas, security
+
 
 # Esto crea las tablas en MySQL automáticamente si no existen
 models.Base.metadata.create_all(bind=engine)

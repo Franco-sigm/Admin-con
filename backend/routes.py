@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi.security import OAuth2PasswordRequestForm
+import security
+
 
 # 1. Importamos la conexión a la DB archivos de estructura
 from database import get_db
@@ -164,3 +167,62 @@ def create_anuncio(anuncio: schemas.AnuncioCreate, db: Session = Depends(get_db)
 @router.get("/anuncios", response_model=List[schemas.Anuncio])
 def read_anuncios(db: Session = Depends(get_db)):
     return db.query(models.Anuncio).all()
+
+
+# 1. REGISTRAR USUARIO (Crea un nuevo usuario en la DB)
+@router.post("/register", response_model=schemas.Usuario)
+def register_user(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
+    # --- DIAGNÓSTICO (CHIVATO) ---
+    print("--------------------------------------------------")
+    print(f"INTENTANDO REGISTRAR A: {usuario.email}")
+    print(f"LA CONTRASEÑA QUE LLEGÓ ES: '{usuario.password}'") 
+    print(f"LARGO DE LA CONTRASEÑA: {len(usuario.password)}")
+    print("--------------------------------------------------")
+    # -----------------------------
+
+    # A. Verificar si el email ya existe
+    db_user = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Este email ya está registrado")
+    
+    # B. Encriptar la contraseña
+    hashed_password_generado = security.get_password_hash(usuario.password)
+    
+    # C. Crear el usuario
+    nuevo_usuario = models.Usuario(
+        nombre=usuario.nombre,
+        email=usuario.email,
+        password_hash=hashed_password_generado, # <--- CORREGIDO: Usamos el nombre real de la DB
+        rol=usuario.rol,
+        comunidad_id=usuario.comunidad_id 
+    )
+    
+    db.add(nuevo_usuario)
+    db.commit()
+    db.refresh(nuevo_usuario)
+    
+    return nuevo_usuario
+
+# 2. LOGIN (Recibe email/pass y devuelve Token)
+# En routes.py
+
+@router.post("/token", response_model=schemas.Token)
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # A. Buscar usuario
+    user = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
+    
+    # B. Verificar contraseña
+    # CORREGIDO: Cambiamos user.hashed_password por user.password_hash 👇
+    if not user or not security.verify_password(form_data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # C. Generar Token
+    access_token = security.create_access_token(
+        data={"sub": user.email, "id": user.id, "rol": user.rol}
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
