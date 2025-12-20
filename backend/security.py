@@ -2,6 +2,11 @@ from datetime import datetime, timedelta
 from typing import Union
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from database import get_db # <--- Importamos la conexión DB
+import models # <--- Importamos tus tablas
 
 # 1. CONFIGURACIÓN
 # IMPORTANTE: En un trabajo real, esta clave va en un archivo .env, no aquí.
@@ -49,3 +54,40 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     
     return encoded_jwt
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Esta función se ejecuta automáticamente en cada ruta protegida.
+    1. Lee el token del encabezado.
+    2. Verifica que sea válido y no haya expirado.
+    3. Busca al usuario en la DB por su email.
+    4. Si todo está bien, devuelve al usuario (con su ID).
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No se pudo validar las credenciales",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        # Intentamos decodificar el token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        
+        # FastAPI usa "sub" por estándar para guardar el identificador (email)
+        email: str = payload.get("sub") 
+        
+        if email is None:
+            raise credentials_exception
+            
+    except JWTError:
+        raise credentials_exception
+    
+    # Buscamos al usuario en la Base de Datos
+    user = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    
+    if user is None:
+        raise credentials_exception
+        
+    return user

@@ -13,7 +13,7 @@ function LandingPage() {
         <div className="space-x-4">
             {/* Botón para entrar al sistema */}
             <Link 
-              to="/comunidad/1/dashboard" 
+              to="/login" 
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition shadow-lg shadow-indigo-200"
             >
               Ingresar al Sistema

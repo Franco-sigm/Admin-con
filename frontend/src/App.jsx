@@ -1,39 +1,47 @@
-import { useState, useEffect } from 'react' 
-import { Routes, Route, Outlet, useParams } from 'react-router-dom'
+import { Routes, Route, Outlet, useParams } from 'react-router-dom' // <--- Agregamos Outlet y useParams
+import { useState, useEffect } from 'react' // <--- Agregamos los hooks
+import client from './api/client' // <--- Importamos el cliente Axios
+import ProtectedRoute from './components/ProtectedRoute'
 
-// --- COMPONENTES ---
-import Navbar from './components/Navbar.jsx'
-import Sidebar from './components/Sidebar.jsx' 
-import client from './api/client' 
-import LandingPage from './pages/LandingPage.jsx'
-
-// --- PÁGINAS ---
+// Páginas
+import LandingPage from './pages/LandingPage'
+import LoginPage from './pages/LoginPage' // Asegúrate que el nombre coincida con tu archivo
+import RegisterPage from './pages/RegisterPage' // <--- ¡NUEVA!
 import HomePage from './pages/HomePage'
-import ResidentesPage from './pages/ResidentesPage'
-import DashboardPage from './pages/DashboardPage' // <--- ¡ESTO FALTABA!
+import DashboardPage from './pages/DashboardPage'
+import Navbar from './components/Navbar'
+import Sidebar from './components/Sidebar' // <--- Importante importar el Sidebar
 
-// 1. Layout para el interior de una comunidad (Con Sidebar)
+// --- LAYOUT INTERNO (Definido aquí mismo para facilitar) ---
 const DashboardLayout = () => {
-  const { id } = useParams();
-  
-  const [comunidad, setComunidad] = useState(null)
+  const { id } = useParams(); // Captura el ID de la URL (ej: 55)
+  const [comunidad, setComunidad] = useState(null);
 
   useEffect(() => {
-    client.get(`/comunidades/${id}`)
-      .then(res => setComunidad(res.data))
-      .catch(err => console.error(err))
-  }, [id])
+    // Pedimos los datos de la comunidad para mostrarlos en el Sidebar
+    const fetchDatos = async () => {
+        try {
+            const res = await client.get(`/comunidades/${id}`); // Asegúrate que esta ruta exista en backend
+            setComunidad(res.data);
+        } catch (error) {
+            console.error("Error cargando comunidad", error);
+        }
+    };
+    if(id) fetchDatos();
+  }, [id]);
   
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* El Sidebar recibe el ID y el Nombre */}
+      {/* 1. SIDEBAR (Izquierda) */}
       <Sidebar 
         comunidadId={id} 
-        nombreComunidad={comunidad?.nombre} 
+        nombreComunidad={comunidad?.nombre || "Cargando..."} 
       />
       
-      <div className="flex-1 p-8 overflow-y-auto">
-        <Outlet /> {/* Aquí se renderiza el DashboardPage, ResidentesPage, etc */}
+      {/* 2. CONTENIDO (Derecha) */}
+      <div className="flex-1 p-8 overflow-y-auto h-screen">
+        {/* Aquí se inyectan las rutas hijas (DashboardPage, Residentes, etc) */}
+        <Outlet context={{ comunidad }} /> 
       </div>
     </div>
   )
@@ -42,27 +50,37 @@ const DashboardLayout = () => {
 function App() {
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* El Navbar Global se mantiene arriba siempre */}
-      <Navbar />
+      
+      {/* OJO: El Navbar global sale en TODAS las páginas. 
+          Si no lo quieres en el Login, podrías moverlo dentro de LandingPage */}
+      {/* <Navbar /> */} 
 
       <Routes>
-        {/* RUTA 1: El Selector de Comunidades (Sin Sidebar) */}
+        {/* =========================================
+            ZONA PÚBLICA
+           ========================================= */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} /> {/* <--- Agregada */}
 
-        {/* RUTA 2: El Interior de la Comunidad (Con Sidebar) */}
-        <Route path="/comunidad/:id" element={<DashboardLayout />}>
-          
-          {/* RUTA POR DEFECTO: Si entras a /comunidad/5, carga el Dashboard */}
-          <Route index element={<DashboardPage />} /> 
-          
-          {/* Rutas explícitas */}
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="residentes" element={<ResidentesPage />} />
-          
-          {/* Futuras rutas:
-          <Route path="gastos" element={<GastosPage />} /> 
-          */}
-          
+        {/* =========================================
+            ZONA PRIVADA (Protegida)
+           ========================================= */}
+        <Route element={<ProtectedRoute />}>
+            
+            {/* 1. SELECCIÓN DE COMUNIDAD */}
+            <Route path="/home" element={<HomePage />} />
+
+            {/* 2. GESTIÓN DE COMUNIDAD (Layout con Sidebar) */}
+            <Route path="/comunidad/:id" element={<DashboardLayout />}>
+               {/* Cuando entras a /comunidad/1 se carga esto: */}
+               <Route index element={<DashboardPage />} />
+               
+               {/* Cuando entras a /comunidad/1/residentes se carga esto: */}
+               <Route path="residentes" element={<div>Aquí iría la tabla de Residentes</div>} />
+               <Route path="finanzas" element={<div>Aquí iría Finanzas</div>} />
+            </Route>
+
         </Route>
 
       </Routes>

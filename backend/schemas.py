@@ -3,8 +3,7 @@ from typing import Optional, List
 from datetime import date, datetime
 from enum import Enum
 
-# --- DEFINICIÓN DE ENUMS (Opciones fijas) ---
-# Esto asegura que el frontend solo pueda enviar estas opciones exactas
+# --- DEFINICIÓN DE ENUMS ---
 class EstadoPago(str, Enum):
     AL_DIA = 'AL_DIA'
     MOROSO = 'MOROSO'
@@ -31,7 +30,8 @@ class ComunidadCreate(ComunidadBase):
 
 class Comunidad(ComunidadBase):
     id: int
-    # Esto permite leer los datos desde la Base de Datos (SQLAlchemy)
+    usuario_id: int  # <--- ¡AGREGADO! Vital para saber quién es el dueño
+    
     class Config:
         from_attributes = True
 
@@ -44,12 +44,9 @@ class ResidenteBase(BaseModel):
     telefono: Optional[str] = None
     estado_pago: EstadoPago = EstadoPago.AL_DIA
 
-
 class ResidenteCreate(ResidenteBase):
     comunidad_id: int
-    
 
-# Schema de lectura hereda del Base (lo que el cliente verá)
 class Residente(ResidenteBase):
     id: int
     comunidad_id: int
@@ -81,7 +78,6 @@ class AnuncioBase(BaseModel):
     titulo: str
     prioridad: PrioridadAnuncio = PrioridadAnuncio.normal
     mensaje: str
-    
 
 class AnuncioCreate(AnuncioBase):
     comunidad_id: int
@@ -95,40 +91,34 @@ class Anuncio(AnuncioBase):
         from_attributes = True
 
 
-
-
-
-# --- ESQUEMAS DE TOKEN (Lo que devuelve el login) ---
+# --- 5. ESQUEMAS DE TOKEN ---
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+    id: Optional[int] = None      # <--- AGREGADO: Útil para validaciones
+    rol: Optional[str] = None     # <--- AGREGADO: Útil para permisos
 
-# --- ESQUEMAS DE USUARIO ---
 
-# 1. Base (Datos comunes)
+# --- 6. ESQUEMAS DE USUARIO ---
+
 class UsuarioBase(BaseModel):
     nombre: str
     email: str
-    rol: Optional[str] = "CONSERJE" # 'ADMIN_COMUNIDAD' o 'CONSERJE'
-    comunidad_id: Optional[int] = None # Solo si es conserje
+    rol: Optional[str] = "CONSERJE" 
+    comunidad_id: Optional[int] = None # Dónde trabaja (para conserjes)
 
-# 2. Create (Lo que mandas para registrarte -> Incluye Password)
 class UsuarioCreate(UsuarioBase):
     password: str
 
-# 3. Response (Lo que devuelve la API -> ¡SIN PASSWORD!)
 class Usuario(UsuarioBase):
     id: int
-    # Opcional: Si quieres ver qué comunidad creó (solo IDs para no hacer bucle infinito)
-    # comunidades_creadas_ids: List[int] = [] 
+    # No incluimos password aquí por seguridad
+    
+    # Opcional: Para ver sus comunidades si quisieras en el futuro
+    # comunidades_creadas: List[Comunidad] = [] 
 
     class Config:
         from_attributes = True
-
-# 4. Login (Lo que envía el formulario de entrada)
-class LoginRequest(BaseModel):
-    email: str
-    password: str

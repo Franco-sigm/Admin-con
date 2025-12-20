@@ -24,7 +24,7 @@ class Comunidad(Base):
 
     # --- RELACIÓN 2: EL EQUIPO (Usuarios que trabajan aquí, ej: Conserjes) ---
     # Esto permite hacer: comunidad.equipo (y te da la lista de conserjes)
-    equipo = relationship("Usuario", back_populates="comunidad_trabajo", foreign_keys="[Usuario.comunidad_id]")
+    equipo = relationship("Usuario", back_populates="comunidad_trabajo", foreign_keys="Usuario.comunidad_id")
 
 
 # 2. TABLA USUARIOS

@@ -18,13 +18,24 @@ router = APIRouter()
 # ==========================================
 
 @router.post("/comunidades", response_model=schemas.Comunidad)
-def create_comunidad(comunidad: schemas.ComunidadCreate, db: Session = Depends(get_db)):
-    # Convertimos el Schema (JSON) a Modelo (DB)
-    nueva_comunidad = models.Comunidad(**comunidad.dict())
+def create_comunidad(
+    comunidad: schemas.ComunidadCreate, 
+    db: Session = Depends(get_db),
+    # 1. AGREGAMOS ESTO: Para saber quién está creando la comunidad
+    current_user: models.Usuario = Depends(security.get_current_user) 
+):
+    # 2. CREAMOS EL MODELO MEZCLANDO DATOS
+    # Usamos **comunidad.dict() para los datos del form
+    # Y agregamos manualmente el usuario_id
+    nueva_comunidad = models.Comunidad(
+        **comunidad.dict(), 
+        usuario_id=current_user.id  # <--- ¡LA PIEZA QUE FALTABA!
+    )
     
     db.add(nueva_comunidad)
     db.commit()
     db.refresh(nueva_comunidad)
+    
     return nueva_comunidad
 
 @router.get("/comunidades", response_model=List[schemas.Comunidad])
