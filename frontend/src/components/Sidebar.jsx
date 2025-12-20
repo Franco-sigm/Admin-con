@@ -90,10 +90,10 @@ function Sidebar({ comunidadId, nombreComunidad = "Cargando..." }) {
 
       {/* 3. FOOTER: Volver */}
       <div className="p-4 border-t border-gray-100 overflow-hidden">
-         <Link to="/" className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-2'} w-full px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors`} title="Volver al Selector">
+         <Link to="/home" className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-2'} w-full px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors`} title="Volver al Selector">
            <span>⬅</span> 
            <span className={`whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}`}>
-              Volver al Selector
+              Volver a Home
            </span>
          </Link>
       </div>

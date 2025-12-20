@@ -80,6 +80,7 @@ function App() {
                {/* Cuando entras a /comunidad/1/residentes se carga esto: */}
                <Route path="residentes" element={<ResidentesPage />} />
                <Route path="dashboard" element={<DashboardPage />} />
+               
                <Route path="finanzas" element={<div>Aquí iría Finanzas</div>} />
             </Route>
 
