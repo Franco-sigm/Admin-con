@@ -2,26 +2,25 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom' 
 import client from '../api/client'
 
+// Estado inicial del formulario para reutilizarlo al limpiar
+const INITIAL_FORM_STATE = {
+  id: null,
+  nombre: '',
+  unidad: '',
+  email: '',
+  telefono: '',
+  estado_pago: 'AL_DIA'
+}
+
 function ResidentesPage() {
   const { id } = useParams() 
   
   const [residentes, setResidentes] = useState([])
-  const [idEdicion, setIdEdicion] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
-  const [formResidente, setFormResidente] = useState({
-    id: null,
-    nombre: '',
-    unidad: '',
-    email: '',
-    telefono: '',
-    estado_pago: 'AL_DIA'
-  })
+  const [formResidente, setFormResidente] = useState(INITIAL_FORM_STATE)
 
-  
-
- 
-// --- CARGAR DATOS ---
+  // --- CARGAR DATOS ---
   useEffect(() => {
     if (id) cargarResidentes()
   }, [id])
@@ -33,14 +32,13 @@ function ResidentesPage() {
       setResidentes(respuesta.data)
     } catch (error) {
       console.error("Error cargando:", error)
+      alert("Error al cargar la lista de residentes")
     } finally {
       setCargando(false)
     }
   }
 
-  // --- MANEJO DEL FORMULARIO (CORREGIDO) ---
-  
-  // 1. INPUT CHANGE: Ahora actualiza 'formResidente' (NO 'nuevoResidente')
+  // --- MANEJO DEL FORMULARIO ---
   const handleInputChange = (e) => {
     setFormResidente({
       ...formResidente,
@@ -48,95 +46,68 @@ function ResidentesPage() {
     })
   }
 
-  // 2. PREPARAR EDICIÓN
   const handleEditar = (residente) => {
-    console.log("✏️ Click en Editar. Datos:", residente)
-    if (!residente.id) alert("⚠️ ALERTA: Residente sin ID.")
-    
     setFormResidente(residente) 
     setMostrarModal(true)       
   }
 
-  // 3. CERRAR MODAL Y LIMPIAR
   const cerrarModal = () => {
     setMostrarModal(false)
-    // Reseteamos el formulario único
-    setFormResidente({ id: null, nombre: '', unidad: '', email: '', telefono: '', estado_pago: 'AL_DIA' })
+    setFormResidente(INITIAL_FORM_STATE) // Reseteamos al estado inicial limpio
   }
 
-  // 4. GUARDAR MAESTRO (Crea o Edita según corresponda)
-  // Nota: Eliminé la función 'crearResidente' porque esta ya hace todo.
   const handleSubmit = async (e) => {
     e.preventDefault()
     const comunidadIdNum = parseInt(id) 
 
-    console.log("💾 Guardando:", formResidente)
-
     try {
-      const datosAEnviar = { 
-        nombre: formResidente.nombre,
-        unidad: formResidente.unidad,
-        email: formResidente.email,
-        telefono: formResidente.telefono,
-        estado_pago: formResidente.estado_pago,
-        comunidad_id: comunidadIdNum
-      }
+      const datosAEnviar = { ...formResidente, comunidad_id: comunidadIdNum }
 
       if (formResidente.id) {
         // --- EDITAR (PUT) ---
-        console.log(`🔄 Editando ID: ${formResidente.id}`)
         await client.put(`/residentes/${formResidente.id}`, datosAEnviar)
-        alert("✅ Actualizado correctamente")
+        // Opcional: Feedback visual más sutil (Toast) en el futuro
+        alert("✅ Residente actualizado correctamente")
       } else {
         // --- CREAR (POST) ---
-        console.log("✨ Creando nuevo")
-        await client.post('/residentes', datosAEnviar)
-        alert("✅ Creado correctamente")
+        await client.post(`/residentes/${id}`, datosAEnviar)
+        alert("✅ Residente creado correctamente")
       }
       
-      cerrarModal()     // Cierra y limpia
-      cargarResidentes() // Recarga la tabla
+      cerrarModal()     
+      cargarResidentes() 
       
     } catch (error) {
       console.error("❌ Error guardando:", error)
-      alert("Error al guardar. Revisa la consola.")
+      alert("Hubo un error al guardar. Por favor intenta nuevamente.")
     }
   }
 
-  // --- ELIMINAR ---
   const handleEliminar = async (residenteId) => {
-    if (!window.confirm("¿Seguro de eliminar?")) return;
+    if (!window.confirm("¿Estás seguro de que quieres eliminar a este residente? Esta acción no se puede deshacer.")) return;
 
     try {
       await client.delete(`/residentes/${residenteId}`)
-      alert("🗑️ Eliminado")
+      alert("🗑️ Residente eliminado")
       cargarResidentes()
     } catch (error) {
       console.error("❌ Error eliminando:", error)
-      alert("Error al eliminar.")
+      alert("No se pudo eliminar el residente.")
     }
   }
+
   return (
-    <div className="mt-2 relative">
+    <div className="mt-2 relative p-4">
       
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h2 className="text-2xl font-bold text-gray-800">👥 Padrón de Residentes</h2>
-            <p className="text-gray-500 text-sm">Listado de propietarios y arrendatarios</p>
+            <p className="text-gray-500 text-sm">Gestiona los propietarios y arrendatarios de la comunidad</p>
         </div>
         <button 
           onClick={() => { 
-            // 1. Limpiamos el formulario usando la variable CORRECTA (formResidente)
-            setFormResidente({ 
-                id: null, // Importante: null significa "Crear Nuevo"
-                nombre: '', 
-                unidad: '', 
-                email: '', 
-                telefono: '', 
-                estado_pago: 'AL_DIA' 
-            }); 
-            // 2. Abrimos el modal
+            setFormResidente(INITIAL_FORM_STATE); 
             setMostrarModal(true); 
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition flex items-center gap-2"
@@ -145,51 +116,55 @@ function ResidentesPage() {
         </button>
       </div>
 
-      {/* TABLA DE 5 COLUMNAS */}
+      {/* TABLA */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {cargando ? (
-          <div className="p-12 text-center text-gray-400"><p>Cargando datos...</p></div>
+          <div className="p-12 flex flex-col items-center justify-center text-gray-400">
+             {/* Spinner simple con Tailwind */}
+             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-2"></div>
+             <p>Cargando datos...</p>
+          </div>
         ) : residentes.length === 0 ? (
-           <div className="p-12 text-center text-gray-400"><p>Aún no hay residentes.</p></div>
+           <div className="p-12 text-center text-gray-400">
+             <p className="text-4xl mb-2">📂</p>
+             <p>Aún no hay residentes registrados en esta comunidad.</p>
+           </div>
         ) : (
-          <table className="min-w-full leading-normal">
-            <thead>
-              <tr>
-                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unidad</th>
-                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
-                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Teléfono</th>
-                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {residentes.map((res) => (
-                <tr key={res.id} className="hover:bg-gray-50 transition">
-                  <td className="px-5 py-4 whitespace-no-wrap text-sm font-bold text-gray-700">{res.unidad}</td>
-                  
-                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-gray-600">
-                      <div className="flex items-center gap-3">
-                        {res.nombre}
-                      </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full leading-normal">
+              <thead>
+                <tr>
+                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unidad</th>
+                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Contacto</th>
+                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {residentes.map((res) => (
+                  <tr key={res.id} className="hover:bg-gray-50 transition">
+                    <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-700">{res.unidad}</td>
+                    
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{res.nombre}</td>
 
-                  {/* Nueva Columna Email */}
-                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-gray-500">{res.email || '-'}</td>
+                    {/* Combiné Email y Teléfono para ahorrar espacio horizontal en móviles */}
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex flex-col">
+                            <span>{res.email || '-'}</span>
+                            <span className="text-xs text-gray-400">{res.telefono}</span>
+                        </div>
+                    </td>
 
-                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-gray-500">{res.telefono || '-'}</td>
-
-                  <td className="px-5 py-4 whitespace-no-wrap text-sm">
-                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${res.estado_pago === 'MOROSO' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                      {res.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
-                    </span>
-                  </td>
-                  {/* --- NUEVA COLUMNA DE BOTONES --- */}
-                  
-                  <td className="px-5 py-4 whitespace-no-wrap text-sm text-center">
-                    <div className="flex items-center justify-center gap-2">
-                        {/* Botón Editar */}
+                    <td className="px-5 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${res.estado_pago === 'MOROSO' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'}`}>
+                        {res.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
+                      </span>
+                    </td>
+                    
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button 
                           onClick={() => handleEditar(res)}
                           className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg transition"
@@ -197,8 +172,6 @@ function ResidentesPage() {
                         >
                           ✏️
                         </button>
-                        
-                        {/* Botón Eliminar */}
                         <button 
                           onClick={() => handleEliminar(res.id)}
                           className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition"
@@ -206,109 +179,112 @@ function ResidentesPage() {
                         >
                           🗑️
                         </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* --- MODAL --- */}
       {mostrarModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
-                 <h3 className="text-lg font-bold text-gray-800"></h3>
-                   {formResidente.id ? 'Editar Residente' : 'Nuevo Residente'}
-
+        <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={cerrarModal} // Click afuera cierra el modal
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-down"
+            onClick={(e) => e.stopPropagation()} // Click adentro NO cierra el modal
+          >
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                 <h3 className="text-lg font-bold text-gray-800">
+                    {formResidente.id ? 'Editar Residente' : 'Nuevo Residente'}
+                 </h3>
+                 <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             
-           <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               
-              {/* CAMPO 1: NOMBRE */}
+              {/* Agrupamos inputs para mejorar la visual */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-1">Nombre</label>
+                <label className="block text-gray-700 text-xs font-bold mb-1 uppercase tracking-wide">Nombre Completo</label>
                 <input 
                   type="text" 
                   name="nombre" 
-                  value={formResidente.nombre} // ✅ Correcto
+                  value={formResidente.nombre}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
                   required placeholder="Ej: Juan Pérez" 
                 />
               </div>
 
-              {/* CAMPO 2: UNIDAD */}
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-1">Unidad</label>
-                <input 
-                  type="text" 
-                  name="unidad" 
-                  value={formResidente.unidad} // ✅ Cambiado de nuevoResidente a formResidente
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                  required placeholder="Ej: 104-B" 
-                />
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-700 text-xs font-bold mb-1 uppercase tracking-wide">Unidad</label>
+                    <input 
+                      type="text" 
+                      name="unidad" 
+                      value={formResidente.unidad}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      required placeholder="Ej: 104-B" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 text-xs font-bold mb-1 uppercase tracking-wide">Estado Pago</label>
+                    <select 
+                      name="estado_pago" 
+                      value={formResidente.estado_pago}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    >
+                      <option value="AL_DIA">Al Día</option>
+                      <option value="MOROSO">Moroso</option>
+                    </select>
+                  </div>
               </div>
 
-              {/* CAMPO 3: EMAIL */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-1">Email</label>
+                <label className="block text-gray-700 text-xs font-bold mb-1 uppercase tracking-wide">Email</label>
                 <input 
                   type="email" 
                   name="email" 
-                  value={formResidente.email} // ✅ Cambiado de nuevoResidente a formResidente
+                  value={formResidente.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   placeholder="juan@correo.com" 
                 />
               </div>
 
-              {/* CAMPO 4: TELÉFONO */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-1">Teléfono</label>
+                <label className="block text-gray-700 text-xs font-bold mb-1 uppercase tracking-wide">Teléfono</label>
                 <input 
                   type="text" 
                   name="telefono" 
-                  value={formResidente.telefono} // ✅ Cambiado de nuevoResidente a formResidente
+                  value={formResidente.telefono}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   placeholder="+56 9 ..." 
                 />
               </div>
-
-               {/* CAMPO 5: ESTADO PAGO */}
-               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-1">Estado Pago</label>
-                <select 
-                  name="estado_pago" 
-                  value={formResidente.estado_pago} // ✅ Cambiado de nuevoResidente a formResidente
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
-                >
-                  <option value="AL_DIA">Al Día</option>
-                  <option value="MOROSO">Moroso</option>
-                </select>
-              </div>
               
-              {/* 2. BOTONES DINÁMICOS */}
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                 <button 
                   type="button" 
                   onClick={cerrarModal}
-                  className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition font-medium"
                 >
                   Cancelar
                 </button>
                 
                 <button 
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition font-bold"
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md hover:shadow-lg transition font-bold"
                 >
-                  {/* ¿Tiene ID? Cambiamos el texto del botón */}
-                  {formResidente.id ? 'Actualizar Cambios' : 'Guardar Residente'}
+                  {formResidente.id ? 'Guardar Cambios' : 'Crear Residente'}
                 </button>
               </div>
             </form>

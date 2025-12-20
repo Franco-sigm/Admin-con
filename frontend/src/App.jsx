@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage'
 import DashboardPage from './pages/DashboardPage'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar' // <--- Importante importar el Sidebar
+import ResidentesPage from './pages/ResidentesPage'
 
 // --- LAYOUT INTERNO (Definido aquí mismo para facilitar) ---
 const DashboardLayout = () => {
@@ -77,7 +78,8 @@ function App() {
                <Route index element={<DashboardPage />} />
                
                {/* Cuando entras a /comunidad/1/residentes se carga esto: */}
-               <Route path="residentes" element={<div>Aquí iría la tabla de Residentes</div>} />
+               <Route path="residentes" element={<ResidentesPage />} />
+               <Route path="dashboard" element={<DashboardPage />} />
                <Route path="finanzas" element={<div>Aquí iría Finanzas</div>} />
             </Route>
 

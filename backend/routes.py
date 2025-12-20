@@ -39,8 +39,25 @@ def create_comunidad(
     return nueva_comunidad
 
 @router.get("/comunidades", response_model=List[schemas.Comunidad])
-def read_comunidades(db: Session = Depends(get_db)):
-    return db.query(models.Comunidad).all()
+def read_comunidades(
+    db: Session = Depends(get_db),
+    # 1. Obtenemos al usuario que está haciendo la petición
+    current_user: models.Usuario = Depends(security.get_current_user)
+):
+    # 2. Filtramos: "Trae las comunidades donde el dueño soy YO"
+    comunidades = db.query(models.Comunidad)\
+        .filter(models.Comunidad.usuario_id == current_user.id)\
+        .all()
+        
+    return comunidades
+
+
+@router.get("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
+def read_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
+    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
+    if db_comunidad is None:
+        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
+    return db_comunidad
 
 # actualizar comunidadij
 @router.put("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
@@ -104,28 +121,34 @@ def delete_residente(residente_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Residente eliminado exitosamente"}
 
-@router.post("/residentes", response_model=schemas.Residente)
-def create_residente(residente: schemas.ResidenteCreate, db: Session = Depends(get_db)):
-    # VALIDACIÓN: Verificar que la comunidad existe antes de guardar al residente
-    comunidad_existe = db.query(models.Comunidad).filter(models.Comunidad.id == residente.comunidad_id).first()
+@router.post("/residentes/{comunidad_id}", response_model=schemas.Residente)
+def create_residente(comunidad_id: int, residente: schemas.ResidenteCreate, db: Session = Depends(get_db)):
     
+    # 1. Validación (esto déjalo igual)
+    comunidad_existe = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
     if not comunidad_existe:
         raise HTTPException(status_code=404, detail="La comunidad especificada no existe")
 
-    # Si pasa la validación, guardamos
-    nuevo_residente = models.Residente(**residente.dict())
+    # --- AQUÍ ESTÁ EL CAMBIO ---
+    
+    # 2. Convertimos el Pydantic a Diccionario
+    residente_data = residente.dict()
+    
+    # 3. Forzamos el ID de la comunidad usando el de la URL
+    # (Al asignarlo así, sobreescribimos el que venía del frontend si es que venía)
+    residente_data['comunidad_id'] = comunidad_id
+
+    # 4. Creamos el modelo pasando SOLO el diccionario
+    nuevo_residente = models.Residente(**residente_data)
+    
+    # ---------------------------
+
     db.add(nuevo_residente)
     db.commit()
     db.refresh(nuevo_residente)
     return nuevo_residente
 
 
-@router.get("/comunidades/{comunidad_id}", response_model=schemas.Comunidad)
-def read_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
-    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
-    if db_comunidad is None:
-        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
-    return db_comunidad
 
 @router.get("/residentes", response_model=List[schemas.Residente])
 def read_residentes(comunidad_id: int = None, db: Session = Depends(get_db)):
