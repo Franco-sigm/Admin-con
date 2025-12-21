@@ -68,6 +68,7 @@ class Transaccion(Base):
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"))
     tipo = Column(Enum('INGRESO', 'EGRESO'))
     descripcion = Column(String(255), nullable=True)
+    categoria = Column(String(50))
     monto = Column(Integer)
     fecha = Column(Date)
 

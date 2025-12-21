@@ -183,7 +183,10 @@ def create_transaccion(transaccion: schemas.TransaccionCreate, db: Session = Dep
 def read_transacciones(db: Session = Depends(get_db)):
     return db.query(models.Transaccion).all()
 
-
+@router.get("/transacciones/{comunidad_id}", response_model=List[schemas.Transaccion])
+def read_transacciones_por_comunidad(comunidad_id: int, db: Session = Depends(get_db)):
+    transacciones = db.query(models.Transaccion).filter(models.Transaccion.comunidad_id == comunidad_id).all()
+    return transacciones
 # anunicos 
 
 @router.post("/anuncios", response_model=schemas.Anuncio)

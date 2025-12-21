@@ -12,6 +12,7 @@ import DashboardPage from './pages/DashboardPage'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar' // <--- Importante importar el Sidebar
 import ResidentesPage from './pages/ResidentesPage'
+import IngresosEgresosPage from './pages/IngresosEgresosPage'
 
 // --- LAYOUT INTERNO (Definido aquí mismo para facilitar) ---
 const DashboardLayout = () => {
@@ -81,7 +82,7 @@ function App() {
                <Route path="residentes" element={<ResidentesPage />} />
                <Route path="dashboard" element={<DashboardPage />} />
                
-               <Route path="finanzas" element={<div>Aquí iría Finanzas</div>} />
+               <Route path="finanzas" element={<IngresosEgresosPage />} />
             </Route>
 
         </Route>

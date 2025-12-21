@@ -1,23 +1,32 @@
 import { Link } from 'react-router-dom'
+import logo from '../assets/logo-conadmin.png';
 
 function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       
-      {/* 1. NAVBAR (Barra superior) */}
+    {/* 1. NAVBAR (Barra superior) */}
       <nav className="flex justify-between items-center px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-50">
+        
+        {/* IZQUIERDA: Logo y Texto */}
         <div className="flex items-center gap-2">
-            <span className="text-2xl">🏢</span>
-            <h1 className="text-xl font-bold tracking-tighter text-indigo-900">CondoManager</h1>
+            <img 
+              src={logo} 
+              alt="logo-ConAdmin" 
+              className="h-16 w-auto object-contain" 
+            />
+          
         </div>
-        <div className="space-x-4">
+
+        {/* DERECHA: Botones de Acción (Asegúrate de incluir esto antes de cerrar </nav>) */}
+       <div className="space-x-4">
             {/* Botón para entrar al sistema */}
             <Link 
               to="/login" 
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition shadow-lg shadow-indigo-200"
-            >
+              className="px-5 py-2.5 bg-[oklch(50%_0.134_242.749)] hover:bg-[oklch(45%_0.134_242.749)] text-white font-medium rounded-lg transition shadow-lg"
+             >
               Ingresar al Sistema
-            </Link>
+           </Link>
         </div>
       </nav>
 
@@ -25,18 +34,16 @@ function LandingPage() {
       <header className="px-6 py-20 text-center bg-gradient-to-b from-indigo-50 to-white">
         <div className="max-w-4xl mx-auto">
             <span className="inline-block py-1 px-3 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold mb-6">
-                v1.0 Disponible Ahora 🚀
+                v1.0 Disponible Ahora 
             </span>
             <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
-                La forma moderna de administrar <span className="text-indigo-600">tu comunidad</span>
+                La forma moderna de administrar <span className="text-[oklch(50%_0.134_242.749)]">tu comunidad</span>
             </h1>
             <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
                 Olvídate de las planillas de Excel. Gestiona residentes, gastos comunes y anuncios en una sola plataforma rápida y segura.
             </p>
             <div className="flex justify-center gap-4">
-                <Link to="/comunidad/1/dashboard" className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold rounded-xl shadow-xl transition transform hover:-translate-y-1">
-                    Comenzar Gratis
-                </Link>
+               
                 <button className="px-8 py-4 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-lg font-bold rounded-xl shadow-sm transition">
                     Ver Demo
                 </button>
@@ -51,21 +58,21 @@ function LandingPage() {
         <div className="grid md:grid-cols-3 gap-10">
             {/* Card 1 */}
             <div className="p-8 rounded-2xl bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition">
-                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-2xl mb-4">👥</div>
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-2xl mb-4"></div>
                 <h3 className="text-xl font-bold mb-3">Residentes</h3>
                 <p className="text-gray-500">Mantén un padrón actualizado de propietarios y arrendatarios con sus datos de contacto al día.</p>
             </div>
 
             {/* Card 2 */}
             <div className="p-8 rounded-2xl bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition">
-                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-2xl mb-4">💰</div>
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-2xl mb-4"></div>
                 <h3 className="text-xl font-bold mb-3">Finanzas Claras</h3>
                 <p className="text-gray-500">Registra ingresos y egresos. Identifica rápidamente quién está al día y quién está moroso.</p>
             </div>
 
             {/* Card 3 */}
             <div className="p-8 rounded-2xl bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition">
-                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-2xl mb-4">📢</div>
+                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-2xl mb-4"></div>
                 <h3 className="text-xl font-bold mb-3">Comunicación</h3>
                 <p className="text-gray-500">Publica anuncios importantes para que toda la comunidad esté informada al instante.</p>
             </div>
@@ -74,7 +81,7 @@ function LandingPage() {
 
       {/* 4. FOOTER */}
       <footer className="bg-gray-900 text-white py-12 text-center">
-        <p className="text-gray-400">© 2024 CondoManager. Creado con ❤️ para conserjes y administradores.</p>
+        <p className="text-gray-400">© 2025 ConAdmin Creado para conserjes y administradores.</p>
       </footer>
 
     </div>

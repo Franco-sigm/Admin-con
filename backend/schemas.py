@@ -56,21 +56,28 @@ class Residente(ResidenteBase):
 
 
 # --- 3. SCHEMAS DE TRANSACCIONES ---
+class TipoTransaccion(str, Enum):
+    INGRESO = "INGRESO"
+    EGRESO = "EGRESO"
+
+# Esquema base
 class TransaccionBase(BaseModel):
     tipo: TipoTransaccion
     descripcion: Optional[str] = None
+    categoria: Optional[str] = None  # <--- ¡AGREGA ESTO AQUÍ!
     monto: int
     fecha: date
 
+# Esquema para crear (Create)
 class TransaccionCreate(TransaccionBase):
-    comunidad_id: int
+    comunidad_id: int 
 
+# Esquema para leer (Response)
 class Transaccion(TransaccionBase):
     id: int
-    comunidad_id: int
-
+    
     class Config:
-        from_attributes = True
+        from_attributes = True # Antes orm_mode = True
 
 
 # --- 4. SCHEMAS DE ANUNCIOS ---
