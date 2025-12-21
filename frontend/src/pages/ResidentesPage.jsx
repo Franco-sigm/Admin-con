@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom' 
 import client from '../api/client'
 
+
 // Estado inicial del formulario para reutilizarlo al limpiar
 const INITIAL_FORM_STATE = {
   id: null,

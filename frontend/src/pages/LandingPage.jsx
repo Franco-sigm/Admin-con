@@ -15,7 +15,8 @@ function LandingPage() {
               alt="logo-ConAdmin" 
               className="h-16 w-auto object-contain" 
             />
-          
+            
+            
         </div>
 
         {/* DERECHA: Botones de Acción (Asegúrate de incluir esto antes de cerrar </nav>) */}
@@ -58,21 +59,21 @@ function LandingPage() {
         <div className="grid md:grid-cols-3 gap-10">
             {/* Card 1 */}
             <div className="p-8 rounded-2xl bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition">
-                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-2xl mb-4"></div>
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-2xl mb-4">☖</div>
                 <h3 className="text-xl font-bold mb-3">Residentes</h3>
                 <p className="text-gray-500">Mantén un padrón actualizado de propietarios y arrendatarios con sus datos de contacto al día.</p>
             </div>
 
             {/* Card 2 */}
             <div className="p-8 rounded-2xl bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition">
-                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-2xl mb-4"></div>
+                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-2xl mb-4">∑</div>
                 <h3 className="text-xl font-bold mb-3">Finanzas Claras</h3>
                 <p className="text-gray-500">Registra ingresos y egresos. Identifica rápidamente quién está al día y quién está moroso.</p>
             </div>
 
             {/* Card 3 */}
             <div className="p-8 rounded-2xl bg-white border border-gray-100 shadow-xl hover:shadow-2xl transition">
-                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-2xl mb-4"></div>
+                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-2xl mb-4">▤</div>
                 <h3 className="text-xl font-bold mb-3">Comunicación</h3>
                 <p className="text-gray-500">Publica anuncios importantes para que toda la comunidad esté informada al instante.</p>
             </div>

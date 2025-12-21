@@ -141,7 +141,7 @@ function HomePage() {
                   setIdEdicion(null) 
                   setMostrarModal(true)
                 }}
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-lg shadow hover:bg-blue-700 transition font-semibold"
+                className="px-5 py-2.5 bg-[oklch(50%_0.134_242.749)] hover:bg-[oklch(45%_0.134_242.749)] text-white font-medium rounded-lg transition shadow-lg relative"
               >
                 + Nueva Comunidad
             </button>
@@ -150,7 +150,7 @@ function HomePage() {
         
         // 1. SI ESTÁ VACÍO: Mostramos el cartel de bienvenida
         <div className="flex flex-col items-center justify-center py-20 bg-white border-2 border-dashed border-gray-300 rounded-xl">
-           <div className="text-6xl mb-4">🏢</div>
+           <div className="text-6xl mb-4">☖</div>
            <h3 className="text-xl font-bold text-gray-700">Aún no hay comunidades</h3>
            <p className="text-gray-500 mt-2 text-center max-w-sm">
              ¡Bienvenido! Parece que aún no has agregado ningún condominio. <br/>

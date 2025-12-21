@@ -49,15 +49,14 @@ function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+        <button className="px-5 py-2.5 bg-[oklch(50%_0.134_242.749)] hover:bg-[oklch(45%_0.134_242.749)] text-white font-medium rounded-lg transition shadow-lg relative w-full" type="submit">
           Entrar
         </button>
-         <p className="mt-4 text-center text-sm">
-          ¿No tienes cuenta? <Link to="/register" className="text-blue-500">Regístrate</Link>
-        </p>
+        
       </form>
     </div>
   );
 }
 
 export default LoginPage;
+
