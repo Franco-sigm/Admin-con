@@ -3,21 +3,20 @@ import logo from '../assets/logo-conadmin.png';
 
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
+    <div className="min-h-screen bg-transparent font-sans text-gray-900">
       
     {/* 1. NAVBAR (Barra superior) */}
-      <nav className="flex justify-between items-center px-8 py-4 bg-white border-b border-gray-100 sticky top-0 z-50">
+      <nav className="flex justify-between items-center px-8 py-4 bg-transparent  sticky top-0 z-50">
         
-        {/* IZQUIERDA: Logo y Texto */}
-        <div className="flex items-center gap-2">
-            <img 
-              src={logo} 
-              alt="logo-ConAdmin" 
-              className="h-16 w-auto object-contain" 
-            />
+        <div className="flex items-center">
             
+              <img className="h-16 w-auto" src={logo} alt="logo-ConAdmin" />
+              <span className="font-bold text-xl hidden sm:block -ml-8 -mt-2">
+                <span className="text-[oklch(50%_0.134_242.749)]">CONADMIN</span>
+              </span>
             
         </div>
+                       
 
         {/* DERECHA: Botones de Acción (Asegúrate de incluir esto antes de cerrar </nav>) */}
        <div className="space-x-4">

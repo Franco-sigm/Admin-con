@@ -55,7 +55,7 @@ function App() {
       
       {/* OJO: El Navbar global sale en TODAS las páginas. 
           Si no lo quieres en el Login, podrías moverlo dentro de LandingPage */}
-      {/* <Navbar /> */} 
+      <Navbar />
 
       <Routes>
         {/* =========================================
