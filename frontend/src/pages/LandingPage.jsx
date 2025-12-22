@@ -8,9 +8,9 @@ function LandingPage() {
     {/* 1. NAVBAR (Barra superior) */}
       <nav className="flex justify-between items-center px-8 py-4 bg-transparent  sticky top-0 z-50">
         
-        <div className="flex items-center">
+        <div className="flex items-center group">
             
-              <img className="h-16 w-auto" src={logo} alt="logo-ConAdmin" />
+              <img className="h-16 w-auto animate-trompo" src={logo} alt="logo-ConAdmin" />
               <span className="font-bold text-xl hidden sm:block -ml-8 -mt-2">
                 <span className="text-[oklch(50%_0.134_242.749)]">CONADMIN</span>
               </span>

@@ -27,8 +27,8 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           
           {/* IZQUIERDA: LOGO */}
-          <div className="flex items-center -ml-9">
-             <img className="h-16 w-auto" src={logo} alt="logo-ConAdmin" />
+          <div className="flex items-center -ml-9 group">
+             <img className="h-16 w-auto animate-trompo" src={logo} alt="logo-ConAdmin" />
              <span className="font-bold text-xl hidden sm:block -ml-8 -mt-2">
                <span className="text-[oklch(50%_0.134_242.749)]">CONADMIN</span>
              </span>

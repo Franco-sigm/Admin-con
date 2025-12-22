@@ -24,7 +24,7 @@ function DashboardPage() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500">Residentes Totales</p>
-            <p className="text-2xl font-bold text-gray-800 mt-1">124</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">{"(en desarrollo)"}</p>
           </div>
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl">
             👥
@@ -35,7 +35,7 @@ function DashboardPage() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500">Ocupación</p>
-            <p className="text-2xl font-bold text-gray-800 mt-1">85%</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">{"(en desarrollo)"}</p>
           </div>
           <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center text-xl">
             🏢
@@ -46,7 +46,7 @@ function DashboardPage() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500">Solicitudes Pendientes</p>
-            <p className="text-2xl font-bold text-gray-800 mt-1">3</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">{"(en desarrollo)"}</p>
           </div>
           <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center text-xl">
             🔔
@@ -57,7 +57,7 @@ function DashboardPage() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-500">Balance del Mes</p>
-            <p className="text-2xl font-bold text-gray-800 mt-1">$2.4M</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">{"(en desarrollo)"}</p>
           </div>
           <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center text-xl">
             💰
@@ -91,7 +91,7 @@ function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">Pago Gasto Común</p>
-                <p className="text-xs text-gray-500">Unidad 402 - Hace 2 horas</p>
+                <p className="text-xs text-gray-500">{"(en desarrollo)"}</p>
               </div>
             </div>
 
@@ -102,7 +102,7 @@ function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">Nuevo Residente</p>
-                <p className="text-xs text-gray-500">Juan Pérez en Depto 101 - Ayer</p>
+                <p className="text-xs text-gray-500">{"(en desarrollo)"}</p>
               </div>
             </div>
 
@@ -113,7 +113,7 @@ function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">Reporte de Ruido</p>
-                <p className="text-xs text-gray-500">Torre B - Hace 1 día</p>
+                <p className="text-xs text-gray-500">Torre B - Hace 1 día {"(en desarrollo)"}</p>
               </div>
             </div>
           </div>
