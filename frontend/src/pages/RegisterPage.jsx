@@ -24,7 +24,7 @@ function RegisterPage() {
           'Content-Type': 'application/json', // Importante: JSON para el registro
         },
         body: JSON.stringify({
-            // Asegúrate que estos campos coincidan con tu Schema de FastAPI (UserCreate)
+            
             nombre: formData.nombre, // A veces FastAPI pide username, a veces nombre
             email: formData.email,
             password: formData.password
@@ -69,18 +69,21 @@ function RegisterPage() {
         <div className="absolute bottom-12 right-12 w-64 h-64 bg-[oklch(50%_0.134_242.749)]/40 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
         {/* Tarjeta Glassmorphism */}
-        <div className="relative z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center transform transition-transform hover:scale-105 duration-500">
+       <div className="relative groupz-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center justify-center">
-             <img className="h-24 w-auto drop-shadow-lg" src={logo} alt="logo-ConAdmin" />
-             <span className="font-bold text-3xl text-white mt-4 tracking-tight">
-               ConAdmin
-             </span>
+              <img className="h-48 w-auto drop-shadow-lg animate-trompo" src={logo} alt="logo-ConAdmin" />
+              <span className="font-bold text-3xl text-white -mt-12 tracking-tight">
+                  ConAdmin
+              </span>
+              </div>
+                <p className="text-emerald-100 mt-4 text-lg font-medium">
+                  Gestión inteligente para tu comunidad.
+                </p>
           </div>
-          <p className="text-emerald-100 mt-4 text-lg font-medium">
-            Únete y comienza a administrar tu comunidad hoy.
-          </p>
         </div>
-      </div>
+                    
+                 
+                    
 
       {/* --- LADO DERECHO: FORMULARIO DE REGISTRO --- */}
       <div className="flex items-center justify-center p-6 sm:p-12 bg-white">
@@ -142,7 +145,7 @@ function RegisterPage() {
                 />
             </div>
 
-            {/* Botón de Acción */}
+            {/* Botón de Acción 
             <div>
               <button
                 type="submit"
@@ -155,7 +158,7 @@ function RegisterPage() {
               >
                 {loading ? 'Registrando...' : 'Registrarse'}
               </button>
-            </div>
+            </div>*/}
 
           </form>
            

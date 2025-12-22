@@ -63,10 +63,13 @@ const LoginPage = () => {
         <div className="absolute bottom-12 right-12 w-64 h-64 bg-[oklch(50%_0.134_242.749)]/40 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
         {/* Tarjeta Glassmorphism */}
-        <div className="relative z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
+        <div className="relative group z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center justify-center">
-             <img className="h-24 w-auto drop-shadow-lg" src={logo} alt="logo-ConAdmin" />
-             <span className="font-bold text-3xl text-white mt-4 tracking-tight">
+             
+             {/* 👇 AQUÍ CAMBIÉ h-24 POR h-40 */}
+             <img className="h-48 w-auto drop-shadow-lg animate-trompo" src={logo} alt="logo-ConAdmin" />
+             
+             <span className="font-bold text-3xl text-white -mt-12 tracking-tight">
                ConAdmin
              </span>
           </div>
