@@ -7,7 +7,7 @@ const Navbar = () => {
   const location = useLocation();
   
   // Rutas donde no se muestra el Navbar
-  const rutasSinNavbar = ['/', '/login', '/register', '/home']; 
+  const rutasSinNavbar = ['/', '/login', '/register']; 
   
   if (rutasSinNavbar.includes(location.pathname)) {
     return null;

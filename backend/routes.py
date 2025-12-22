@@ -209,7 +209,7 @@ def read_anuncios(db: Session = Depends(get_db)):
 # 1. REGISTRAR USUARIO (Crea un nuevo usuario en la DB)
 @router.post("/register", response_model=schemas.Usuario)
 def register_user(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
-    # --- DIAGNÓSTICO (CHIVATO) ---
+    # --- DIAGNÓSTICO (sapo) ---
     print("--------------------------------------------------")
     print(f"INTENTANDO REGISTRAR A: {usuario.email}")
     print(f"LA CONTRASEÑA QUE LLEGÓ ES: '{usuario.password}'") 
