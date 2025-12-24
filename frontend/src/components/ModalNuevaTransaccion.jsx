@@ -5,14 +5,13 @@ const CATEGORIAS_EGRESO = ['Mantención', 'Servicios Básicos (Luz/Agua)', 'Suel
 
 const ModalNuevaTransaccion = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    tipo: 'EGRESO', // Valor por defecto
+    tipo: 'EGRESO',
     descripcion: '',
     categoria: '',
     monto: '',
-    fecha: new Date().toISOString().split('T')[0] // Fecha de hoy por defecto
+    fecha: new Date().toISOString().split('T')[0]
   });
 
-  // Resetear el formulario cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -25,24 +24,46 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave }) => {
     }
   }, [isOpen]);
 
-  // Manejar cambios en los inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Manejar el cambio de TIPO (para limpiar la categoría si cambia el tipo)
   const handleTypeChange = (newType) => {
     setFormData(prev => ({ ...prev, tipo: newType, categoria: '' }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Convertir monto a número antes de enviar
+    
+    // 1. DIAGNÓSTICO EN CONSOLA (Presiona F12 para ver esto)
+    console.log("🟢 CLICK EN GUARDAR DETECTADO");
+    console.log("Datos del formulario:", formData);
+
+    // 2. VALIDACIÓN MANUAL
+    // Si falta la categoría, mostramos alerta y detenemos todo.
+    if (!formData.categoria) {
+        alert("⚠️ Falta seleccionar la CATEGORÍA.");
+        return; 
+    }
+
+    if (!formData.descripcion.trim()) {
+        alert("⚠️ Falta agregar una DESCRIPCIÓN.");
+        return;
+    }
+
+    if (!formData.monto || Number(formData.monto) <= 0) {
+        alert("⚠️ El MONTO debe ser mayor a 0.");
+        return;
+    }
+
+    // 3. ENVIAR AL PADRE
     const dataToSend = {
       ...formData,
       monto: Number(formData.monto)
     };
+
+    console.log("🚀 Enviando datos a IngresosEgresosPage...", dataToSend);
     onSave(dataToSend);
   };
 
@@ -60,7 +81,7 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave }) => {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           
-          {/* Selector de Tipo (Toggle) */}
+          {/* Selector de Tipo */}
           <div className="grid grid-cols-2 gap-4 p-1 bg-gray-100 rounded-lg">
             <button
               type="button"
@@ -86,30 +107,28 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave }) => {
             </button>
           </div>
 
-          {/* Monto */}
+          {/* Monto (SIN REQUIRED) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Monto ($)</label>
             <input
               type="number"
               name="monto"
-              required
               min="1"
               value={formData.monto}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
               placeholder="Ej: 50000"
             />
           </div>
 
-          {/* Categoría Dinámica */}
+          {/* Categoría (SIN REQUIRED) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
             <select
               name="categoria"
-              required
               value={formData.categoria}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
             >
               <option value="">Selecciona una categoría...</option>
               {(formData.tipo === 'INGRESO' ? CATEGORIAS_INGRESO : CATEGORIAS_EGRESO).map((cat) => (
@@ -118,30 +137,28 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave }) => {
             </select>
           </div>
 
-          {/* Descripción */}
+          {/* Descripción (SIN REQUIRED) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
             <input
               type="text"
               name="descripcion"
-              required
               value={formData.descripcion}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
               placeholder="Detalle del movimiento..."
             />
           </div>
 
-          {/* Fecha */}
+          {/* Fecha (SIN REQUIRED) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
             <input
               type="date"
               name="fecha"
-              required
               value={formData.fecha}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition"
             />
           </div>
 
