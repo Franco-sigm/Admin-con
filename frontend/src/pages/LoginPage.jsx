@@ -15,40 +15,38 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    // FastAPI espera x-www-form-urlencoded
-    const params = new URLSearchParams();
-    params.append('username', email); 
-    params.append('password', password);
-
     try {
-      // Usamos fetch directo a tu backend
-      const response = await fetch('http://localhost:8000/token', {
+      // CAMBIO CLAVE: Enviamos JSON, no FormData
+      const response = await fetch('http://localhost:5000/token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json', // <--- Ahora es JSON
         },
-        body: params
+        body: JSON.stringify({
+          username: email, // Mapeamos tu estado 'email' al campo 'username' que espera el back
+          password: password
+        })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        
         // GUARDAMOS EL TOKEN
         localStorage.setItem('token', data.access_token);
         
-        // Nos vamos al Dashboard (Cambié /home por /dashboard que es tu ruta real)
-        navigate('/home');
+        // Redirigir
+        navigate('/home'); // Asegúrate que esta ruta exista en tu App.js
       } else {
-        alert("Credenciales incorrectas"); // O podrías poner un mensaje de error más bonito
+        // Mostramos el mensaje exacto que devuelve el backend si existe
+        alert(data.detail || "Credenciales incorrectas");
       }
     } catch (error) {
-      console.error(error);
-      alert("Error de conexión con el servidor");
+      console.error("Error en login:", error);
+      alert("Error de conexión con el servidor (Revisa que el puerto 5000 esté corriendo)");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen md:grid md:grid-cols-2 relative">
       <div className="absolute top-4 right-4 z-50">

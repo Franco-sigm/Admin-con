@@ -9,7 +9,7 @@ function RegisterPage() {
     email: '',
     password: ''
   });
-  const [loading, setLoading] = useState(false); // Estado para feedback visual
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,44 +17,46 @@ function RegisterPage() {
     setLoading(true);
 
     try {
-      // Usamos fetch directo para máxima compatibilidad
-      const response = await fetch('http://localhost:8000/register', {
+      // 1. CAMBIO IMPORTANTE: Puerto 5000 (Flask)
+      const response = await fetch('http://localhost:5000/register', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json', // Importante: JSON para el registro
+          'Content-Type': 'application/json',
         },
+        // 2. CAMBIO IMPORTANTE: Enviamos los campos que faltaban
         body: JSON.stringify({
-            
-            nombre: formData.nombre, // A veces FastAPI pide username, a veces nombre
+            nombre: formData.nombre,
             email: formData.email,
-            password: formData.password
+            password: formData.password,
+            rol: 'ADMINISTRADOR', // Definimos un rol por defecto si no hay selector
+            comunidad_id: null    // Enviamos null para evitar errores de validación
         })
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         alert("¡Cuenta creada con éxito! Por favor inicia sesión.");
         navigate('/login');
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.detail || "No se pudo registrar"}`);
+        alert(`Error: ${data.detail || "No se pudo registrar"}`);
       }
       
     } catch (error) {
       console.error(error);
-      alert("Error de conexión con el servidor.");
+      alert("Error de conexión con el servidor (Revisa que Flask esté corriendo en el puerto 5000).");
     } finally {
       setLoading(false);
     }
   };
 
-  // Función auxiliar para actualizar el estado limpiamente
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
-
+  
   return (
     <div className="min-h-screen md:grid md:grid-cols-2 relative">
       <div className="absolute top-4 right-4 z-50">
@@ -145,7 +147,7 @@ function RegisterPage() {
                 />
             </div>
 
-            {/* Botón de Acción 
+           
             <div>
               <button
                 type="submit"
@@ -158,7 +160,7 @@ function RegisterPage() {
               >
                 {loading ? 'Registrando...' : 'Registrarse'}
               </button>
-            </div>*/}
+            </div>
 
           </form>
            
