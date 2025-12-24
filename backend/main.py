@@ -194,6 +194,59 @@ def delete_residente(residente_id):
 # ==========================================
 # 💰 RUTAS DE TRANSACCIONES
 # ==========================================
+# ✏️ ACTUALIZAR TRANSACCIÓN (PUT)
+# ==========================================
+@app.route("/transacciones/<int:transaccion_id>", methods=['PUT'])
+def update_transaccion(transaccion_id):
+    # 1. Buscar la transacción en la DB
+    transaccion = db_session.query(models.Transaccion).filter(models.Transaccion.id == transaccion_id).first()
+    
+    if not transaccion:
+        return jsonify({"detail": "Transacción no encontrada"}), 404
+
+    # 2. Obtener los datos nuevos del JSON
+    data = request.get_json()
+
+    # 3. Actualizar campo por campo (si vienen en los datos)
+    if 'descripcion' in data:
+        transaccion.descripcion = data['descripcion']
+    if 'monto' in data:
+        transaccion.monto = data['monto']
+    if 'tipo' in data:
+        transaccion.tipo = data['tipo']
+    if 'categoria' in data:
+        transaccion.categoria = data['categoria']
+    if 'fecha' in data:
+        transaccion.fecha = data['fecha']
+
+    # 4. Guardar cambios
+    try:
+        db_session.commit()
+        return jsonify({"message": "Transacción actualizada", "id": transaccion.id}), 200
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({"detail": str(e)}), 500
+
+
+# ==========================================
+# 🗑️ ELIMINAR TRANSACCIÓN (DELETE)
+# ==========================================
+@app.route("/transacciones/<int:transaccion_id>", methods=['DELETE'])
+def delete_transaccion(transaccion_id):
+    # 1. Buscar la transacción
+    transaccion = db_session.query(models.Transaccion).filter(models.Transaccion.id == transaccion_id).first()
+    
+    if not transaccion:
+        return jsonify({"detail": "Transacción no encontrada"}), 404
+
+    # 2. Borrar y confirmar
+    try:
+        db_session.delete(transaccion)
+        db_session.commit()
+        return jsonify({"message": "Transacción eliminada correctamente"}), 200
+    except Exception as e:
+        db_session.rollback()
+        return jsonify({"detail": str(e)}), 500
 
 @app.route("/transacciones", methods=['POST'])
 def create_transaccion():
