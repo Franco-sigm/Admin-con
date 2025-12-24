@@ -11,10 +11,10 @@ const IngresosEgresosPage = () => {
   const [editingTransaction, setEditingTransaction] = useState(null); // <--- NUEVO ESTADO
   const [loading, setLoading] = useState(true);
 
-  // MODO LOCAL
-  const API_URL = 'http://localhost:5000'; 
+
   // MODO PRODUCCIÓN
-  // const API_URL = 'https://api.surcode.cl'; 
+  const API_URL = 'https://api.surcode.cl'; 
+  
 
   useEffect(() => {
     fetchTransactions();

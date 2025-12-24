@@ -17,8 +17,8 @@ const LoginPage = () => {
 
     try {
       // CAMBIO CLAVE: Enviamos JSON, no FormData
-      const response = await fetch('http://localhost:5000/token', {
-        method: 'POST',
+      const response = await fetch('https://api.surcode.cl/token', {
+        method: 'POST',  
         headers: {
           'Content-Type': 'application/json', // <--- Ahora es JSON
         },

@@ -18,7 +18,7 @@ function RegisterPage() {
 
     try {
       // 1. CAMBIO IMPORTANTE: Puerto 5000 (Flask)
-      const response = await fetch('http://localhost:5000/register', {
+      const response = await fetch('https://api.surcode.cl/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
