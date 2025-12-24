@@ -18,7 +18,7 @@ function LandingPage() {
         </div>
                        
 
-        {/* DERECHA: Botones de Acción (Asegúrate de incluir esto antes de cerrar </nav>) */}
+        {/* DERECHA: Botones de Acción ( incluir esto antes de cerrar </nav>) */}
        <div className="space-x-4">
             {/* Botón para entrar al sistema */}
             <Link 
