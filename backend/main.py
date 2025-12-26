@@ -1,33 +1,63 @@
-from flask import Flask, request, jsonify, make_response
+import os 
+from dotenv import load_dotenv # <--- 1. IMPORTAR ESTO
+
+# 2. CARGAR VARIABLES ANTES DE CUALQUIER OTRA IMPORTACIÓN LOCAL
+# Esto asegura que cuando 'database' arranque, ya tenga la URL disponible
+load_dotenv()
+
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database import db_session, engine, Base
-import models
-import schemas
-import security
 from functools import wraps
 from pydantic import ValidationError
 
-# 1. Configuración Inicial
+# Importaciones locales (Mantén esto tal cual, está bien estructurado)
+from database import db_session, engine, Base
+import schemas
+import security
+from services import UsuarioService, ComunidadService, ResidenteService, TransaccionService
+
+# ==========================================
+# ⚙️ CONFIGURACIÓN INICIAL
+# ==========================================
 app = Flask(__name__)
-CORS(app) # Permite que el frontend se conecte
 
-# Crear tablas al iniciar (Solo para desarrollo, idealmente usar migraciones)
-Base.metadata.create_all(bind=engine)
+# 3. SEGURIDAD ADICIONAL (Agregado desde tu .env)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave-por-defecto-insegura')
 
-# 2. Manejo de Sesión de DB
-# Flask cierra la conexión automáticamente al terminar cada petición
+# Configuración CORS profesional
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://www.surcode.cl", 
+            "https://surcode.cl", 
+            "https://api.surcode.cl",
+            "https://www.api.surcode.cl",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Origin"]
+    }
+})
+
+# Crear tablas si no existen
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    # En producción esto queda en el log de errores de cPanel
+    print(f"Info DB: {e}")
+
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
 
 # ==========================================
-# 🔒 DECORADOR DE SEGURIDAD (El reemplazo de Depends)
+# 🔒 DECORADOR DE SEGURIDAD
 # ==========================================
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
-        # Buscar el token en los headers
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']
             if auth_header.startswith("Bearer "):
@@ -37,21 +67,59 @@ def token_required(f):
             return jsonify({'message': 'Token es requerido'}), 401
 
         try:
-            # Usamos tu función de security.py para leer el token
-            payload = security.decode_access_token(token) # Asegúrate que esta funcion exista en security.py y devuelva el payload
+            payload = security.decode_access_token(token)
             if payload is None:
                  return jsonify({'message': 'Token inválido o expirado'}), 401
             
-            # Buscamos al usuario en la DB
-            current_user = db_session.query(models.Usuario).filter_by(email=payload.get("sub")).first()
+            user_service = UsuarioService(db_session)
+            current_user = user_service.obtener_por_id(payload.get("id"))
+            
             if not current_user:
                 return jsonify({'message': 'Usuario no encontrado'}), 401
                 
         except Exception as e:
-            return jsonify({'message': 'Token inválido', 'error': str(e)}), 401
+            return jsonify({'message': 'Error de autenticación', 'error': str(e)}), 401
 
         return f(current_user, *args, **kwargs)
     return decorated
+
+# ==========================================
+# 🔑 AUTH & LOGIN
+# ==========================================
+
+@app.route("/register", methods=['POST'])
+def register():
+    data = request.get_json()
+    service = UsuarioService(db_session)
+    try:
+        schema = schemas.UsuarioCreate(**data)
+        nuevo_usuario = service.crear_usuario(schema)
+        return jsonify({"id": nuevo_usuario.id, "email": nuevo_usuario.email}), 200
+    except ValueError as e:
+        return jsonify({"detail": str(e)}), 400
+    except ValidationError as e:
+        return jsonify(e.errors()), 400
+
+@app.route("/token", methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data or 'password' not in data:
+         return jsonify({"detail": "Faltan credenciales"}), 400
+
+    username = data.get('username') or data.get('email')
+    if not username:
+        return jsonify({"detail": "Falta usuario/email"}), 400
+
+    service = UsuarioService(db_session)
+    user = service.obtener_por_email(username)
+    
+    if not user or not security.verify_password(data['password'], user.password_hash):
+        return jsonify({"detail": "Credenciales incorrectas"}), 401
+        
+    access_token = security.create_access_token(
+        data={"sub": user.email, "id": user.id, "rol": user.rol}
+    )
+    return jsonify({"access_token": access_token, "token_type": "bearer"}), 200
 
 # ==========================================
 # 🏠 RUTAS DE COMUNIDADES
@@ -61,296 +129,161 @@ def token_required(f):
 @token_required
 def create_comunidad(current_user):
     data = request.get_json()
+    service = ComunidadService(db_session)
     try:
-        # 1. Validamos con Pydantic
-        comunidad_schema = schemas.ComunidadCreate(**data)
-        
-        # 2. Creamos el modelo
-        nueva_comunidad = models.Comunidad(
-            **comunidad_schema.dict(),
-            usuario_id=current_user.id # Usamos el usuario del token
-        )
-        
-        db_session.add(nueva_comunidad)
-        db_session.commit()
-        
-        # Flask no devuelve modelos directo, hay que convertirlos a dict/json
-        return jsonify({
-            "id": nueva_comunidad.id,
-            "nombre": nueva_comunidad.nombre,
-            "direccion": nueva_comunidad.direccion
-        }), 200
-        
+        schema = schemas.ComunidadCreate(**data)
+        nueva = service.crear(schema, current_user.id)
+        return jsonify({"id": nueva.id, "nombre": nueva.nombre}), 200
     except ValidationError as e:
         return jsonify(e.errors()), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route("/comunidades", methods=['GET'])
 @token_required
-def read_comunidades(current_user):
-    # Filtramos por el usuario dueño
-    comunidades = db_session.query(models.Comunidad).filter(models.Comunidad.usuario_id == current_user.id).all()
-    
-    # Serializamos la lista manualmente (o podrías usar Marshmallow, pero esto es rápido)
-    resultado = []
-    for c in comunidades:
-        resultado.append({
-            "id": c.id, "nombre": c.nombre, "direccion": c.direccion, 
-            "tipo": c.tipo, "unidades_totales": c.unidades_totales
-        })
-    return jsonify(resultado), 200
+def get_comunidades(current_user):
+    service = ComunidadService(db_session)
+    lista = service.obtener_por_usuario(current_user.id)
+    return jsonify([
+        {"id": c.id, "nombre": c.nombre, "direccion": c.direccion, "tipo": c.tipo, "unidades_totales": c.unidades_totales} 
+        for c in lista
+    ]), 200
 
-@app.route("/comunidades/<int:comunidad_id>", methods=['GET'])
-def read_comunidad(comunidad_id):
-    c = db_session.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
-    if not c:
-        return jsonify({"detail": "Comunidad no encontrada"}), 404
-        
+@app.route("/comunidades/<int:id>", methods=['GET'])
+@token_required
+def get_single_comunidad(current_user, id):
+    service = ComunidadService(db_session)
+    if not service.validar_propiedad(id, current_user.id):
+        return jsonify({"detail": "No encontrado o no autorizado"}), 404
+    
+    comunidad = service.obtener_por_id(id)
     return jsonify({
-        "id": c.id, "nombre": c.nombre, "direccion": c.direccion,
-        "tipo": c.tipo, "unidades_totales": c.unidades_totales
+        "id": comunidad.id, 
+        "nombre": comunidad.nombre,
+        "direccion": comunidad.direccion,
+        "tipo": comunidad.tipo
     }), 200
 
-@app.route("/comunidades/<int:comunidad_id>", methods=['PUT'])
-def update_comunidad(comunidad_id):
-    db_comunidad = db_session.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
-    if not db_comunidad:
-        return jsonify({"detail": "Comunidad no encontrada"}), 404
-    
-    data = request.get_json()
-    for key, value in data.items():
-        if hasattr(db_comunidad, key):
-            setattr(db_comunidad, key, value)
-            
-    db_session.commit()
-    return jsonify({"message": "Comunidad actualizada", "id": db_comunidad.id}), 200
+@app.route("/comunidades/<int:id>", methods=['DELETE'])
+@token_required
+def delete_comunidad(current_user, id):
+    service = ComunidadService(db_session)
+    if service.eliminar(id, current_user.id):
+        return jsonify({"message": "Eliminado correctamente"}), 200
+    return jsonify({"detail": "No autorizado o no encontrado"}), 403
 
-@app.route("/comunidades/<int:comunidad_id>", methods=['DELETE'])
-def delete_comunidad(comunidad_id):
-    db_comunidad = db_session.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
-    if not db_comunidad:
-        return jsonify({"detail": "Comunidad no encontrada"}), 404
-        
-    db_session.delete(db_comunidad)
-    db_session.commit()
-    return jsonify({"message": "Comunidad eliminada correctamente"}), 200
+@app.route("/comunidades/<int:id>", methods=['PUT'])
+@token_required
+def update_comunidad(current_user, id):
+    data = request.get_json()
+    service = ComunidadService(db_session)
+    comunidad_actualizada = service.actualizar(id, data, current_user.id)
+    if comunidad_actualizada:
+        return jsonify({"message": "Comunidad actualizada", "nombre": comunidad_actualizada.nombre}), 200
+    return jsonify({"detail": "No autorizado o comunidad no encontrada"}), 403
 
 # ==========================================
 # 👥 RUTAS DE RESIDENTES
 # ==========================================
 
-@app.route("/residentes/<int:comunidad_id>", methods=['POST'])
-def create_residente(comunidad_id):
-    # Validar comunidad
-    existe = db_session.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
-    if not existe:
-        return jsonify({"detail": "La comunidad especificada no existe"}), 404
-
+@app.route("/residentes", methods=['POST'])
+@token_required
+def create_residente(current_user):
     data = request.get_json()
+    com_service = ComunidadService(db_session)
+    res_service = ResidenteService(db_session)
     try:
-        # Validar datos
-        residente_schema = schemas.ResidenteCreate(**data)
-        
-        res_dict = residente_schema.dict()
-        res_dict['comunidad_id'] = comunidad_id
-        
-        nuevo_residente = models.Residente(**res_dict)
-        db_session.add(nuevo_residente)
-        db_session.commit()
-        
-        return jsonify({"id": nuevo_residente.id, "nombre": nuevo_residente.nombre}), 200
+        schema = schemas.ResidenteCreate(**data)
+        if not com_service.validar_propiedad(schema.comunidad_id, current_user.id):
+            return jsonify({"detail": "No tienes permiso en esta comunidad"}), 403
+        nuevo = res_service.crear(schema)
+        return jsonify({"id": nuevo.id, "nombre": nuevo.nombre}), 200
     except ValidationError as e:
         return jsonify(e.errors()), 400
 
 @app.route("/residentes", methods=['GET'])
-def read_residentes():
-    comunidad_id = request.args.get('comunidad_id') # Query param: ?comunidad_id=1
-    query = db_session.query(models.Residente)
+@token_required
+def get_residentes(current_user):
+    comunidad_id = request.args.get('comunidad_id')
+    if not comunidad_id:
+        return jsonify({"detail": "Falta parametro ?comunidad_id=X"}), 400
     
-    if comunidad_id:
-        query = query.filter(models.Residente.comunidad_id == comunidad_id)
+    com_service = ComunidadService(db_session)
+    if not com_service.validar_propiedad(int(comunidad_id), current_user.id):
+        return jsonify({"detail": "No autorizado"}), 403
         
-    residentes = query.all()
-    
-    # Serializar respuesta
-    lista = []
-    for r in residentes:
-        lista.append({
-            "id": r.id, "nombre": r.nombre, "email": r.email, 
-            "unidad": r.unidad, "estado_pago": r.estado_pago
-        })
-    return jsonify(lista), 200
+    res_service = ResidenteService(db_session)
+    lista = res_service.obtener_por_comunidad(comunidad_id)
+    return jsonify([
+        {"id": r.id, "nombre": r.nombre, "email": r.email, "unidad": r.unidad, "estado_pago": r.estado_pago}
+        for r in lista
+    ]), 200
 
-@app.route("/residentes/<int:residente_id>", methods=['DELETE'])
-def delete_residente(residente_id):
-    res = db_session.query(models.Residente).filter(models.Residente.id == residente_id).first()
-    if not res:
-        return jsonify({"detail": "Residente no encontrado"}), 404
-    db_session.delete(res)
-    db_session.commit()
-    return jsonify({"message": "Residente eliminado"}), 200
+@app.route("/residentes/<int:id>", methods=['DELETE'])
+@token_required
+def delete_residente(current_user, id):
+    res_service = ResidenteService(db_session)
+    if res_service.eliminar(id):
+        return jsonify({"message": "Residente eliminado"}), 200
+    return jsonify({"detail": "No encontrado"}), 404
 
 # ==========================================
 # 💰 RUTAS DE TRANSACCIONES
 # ==========================================
-# ✏️ ACTUALIZAR TRANSACCIÓN (PUT)
-# ==========================================
-@app.route("/transacciones/<int:transaccion_id>", methods=['PUT'])
-def update_transaccion(transaccion_id):
-    # 1. Buscar la transacción en la DB
-    transaccion = db_session.query(models.Transaccion).filter(models.Transaccion.id == transaccion_id).first()
-    
-    if not transaccion:
-        return jsonify({"detail": "Transacción no encontrada"}), 404
-
-    # 2. Obtener los datos nuevos del JSON
-    data = request.get_json()
-
-    # 3. Actualizar campo por campo (si vienen en los datos)
-    if 'descripcion' in data:
-        transaccion.descripcion = data['descripcion']
-    if 'monto' in data:
-        transaccion.monto = data['monto']
-    if 'tipo' in data:
-        transaccion.tipo = data['tipo']
-    if 'categoria' in data:
-        transaccion.categoria = data['categoria']
-    if 'fecha' in data:
-        transaccion.fecha = data['fecha']
-
-    # 4. Guardar cambios
-    try:
-        db_session.commit()
-        return jsonify({"message": "Transacción actualizada", "id": transaccion.id}), 200
-    except Exception as e:
-        db_session.rollback()
-        return jsonify({"detail": str(e)}), 500
-
-
-# ==========================================
-# 🗑️ ELIMINAR TRANSACCIÓN (DELETE)
-# ==========================================
-@app.route("/transacciones/<int:transaccion_id>", methods=['DELETE'])
-def delete_transaccion(transaccion_id):
-    # 1. Buscar la transacción
-    transaccion = db_session.query(models.Transaccion).filter(models.Transaccion.id == transaccion_id).first()
-    
-    if not transaccion:
-        return jsonify({"detail": "Transacción no encontrada"}), 404
-
-    # 2. Borrar y confirmar
-    try:
-        db_session.delete(transaccion)
-        db_session.commit()
-        return jsonify({"message": "Transacción eliminada correctamente"}), 200
-    except Exception as e:
-        db_session.rollback()
-        return jsonify({"detail": str(e)}), 500
 
 @app.route("/transacciones", methods=['POST'])
-def create_transaccion():
+@token_required
+def create_transaccion(current_user):
     data = request.get_json()
+    com_service = ComunidadService(db_session)
+    tx_service = TransaccionService(db_session)
     try:
         schema = schemas.TransaccionCreate(**data)
-        # Verificar comunidad
-        if not db_session.query(models.Comunidad).filter(models.Comunidad.id == schema.comunidad_id).first():
-            return jsonify({"detail": "Comunidad no encontrada"}), 404
-            
-        nueva = models.Transaccion(**schema.dict())
-        db_session.add(nueva)
-        db_session.commit()
-        return jsonify({"id": nueva.id, "monto": nueva.monto, "tipo": nueva.tipo}), 200
+        if not com_service.validar_propiedad(schema.comunidad_id, current_user.id):
+            return jsonify({"detail": "No autorizado"}), 403
+        nueva = tx_service.crear(schema)
+        return jsonify({"id": nueva.id, "monto": nueva.monto}), 200
     except ValidationError as e:
         return jsonify(e.errors()), 400
 
 @app.route("/transacciones/<int:comunidad_id>", methods=['GET'])
-def read_transacciones_comunidad(comunidad_id):
-    txs = db_session.query(models.Transaccion).filter(models.Transaccion.comunidad_id == comunidad_id).all()
-    lista = [{"id": t.id, "monto": t.monto, "tipo": t.tipo, "descripcion": t.descripcion, "fecha": t.fecha.isoformat() if t.fecha else None} for t in txs]
-    return jsonify(lista), 200
-
-# ==========================================
-# 📢 RUTAS DE ANUNCIOS
-# ==========================================
-@app.route("/anuncios", methods=['POST'])
-def create_anuncio():
-    data = request.get_json()
-    try:
-        schema = schemas.AnuncioCreate(**data)
-        nuevo = models.Anuncio(**schema.dict())
-        db_session.add(nuevo)
-        db_session.commit()
-        return jsonify({"id": nuevo.id, "titulo": nuevo.titulo}), 200
-    except ValidationError as e:
-        return jsonify(e.errors()), 400
-
-@app.route("/anuncios", methods=['GET'])
-def read_anuncios():
-    anuncios = db_session.query(models.Anuncio).all()
-    lista = [{"id": a.id, "titulo": a.titulo, "mensaje": a.mensaje, "prioridad": a.prioridad} for a in anuncios]
-    return jsonify(lista), 200
-
-# ==========================================
-# 🔑 AUTH & LOGIN
-# ==========================================
-
-@app.route("/register", methods=['POST'])
-def register_user():
-    data = request.get_json()
-    try:
-        # Validar esquema
-        usuario_schema = schemas.UsuarioCreate(**data)
-        
-        # Verificar email
-        if db_session.query(models.Usuario).filter(models.Usuario.email == usuario_schema.email).first():
-            return jsonify({"detail": "Este email ya está registrado"}), 400
-            
-        # Hash Password
-        hashed = security.get_password_hash(usuario_schema.password)
-        
-        nuevo_usuario = models.Usuario(
-            nombre=usuario_schema.nombre,
-            email=usuario_schema.email,
-            password_hash=hashed,
-            rol=usuario_schema.rol,
-            comunidad_id=usuario_schema.comunidad_id
-        )
-        db_session.add(nuevo_usuario)
-        db_session.commit()
-        
-        return jsonify({"id": nuevo_usuario.id, "email": nuevo_usuario.email}), 200
-        
-    except ValidationError as e:
-        return jsonify(e.errors()), 400
-
-@app.route("/token", methods=['POST'])
-def login():
-    # En Flask no usamos OAuth2PasswordRequestForm automágicamente
-    # Esperamos un JSON con username y password
-    data = request.get_json()
+@token_required
+def get_transacciones(current_user, comunidad_id):
+    com_service = ComunidadService(db_session)
+    if not com_service.validar_propiedad(comunidad_id, current_user.id):
+        return jsonify({"detail": "No autorizado"}), 403
     
-    if not data or 'username' not in data or 'password' not in data:
-         # Soporte por si el frontend manda 'email' en vez de 'username'
-         if 'email' in data:
-             username = data['email']
-         else:
-             return jsonify({"detail": "Faltan credenciales"}), 400
+    tx_service = TransaccionService(db_session)
+    lista = tx_service.obtener_por_comunidad(comunidad_id)
+    return jsonify([
+        {"id": t.id, "tipo": t.tipo, "monto": t.monto, "descripcion": t.descripcion, "categoria": t.categoria, "fecha": t.fecha.isoformat() if t.fecha else None}
+        for t in lista
+    ]), 200
+
+@app.route("/transacciones/<int:transaccion_id>", methods=['PUT'])
+@token_required
+def update_transaccion(current_user, transaccion_id):
+    data = request.get_json()
+    tx_service = TransaccionService(db_session)
+    transaccion_actualizada = tx_service.actualizar(transaccion_id, data)
+    
+    if transaccion_actualizada:
+        return jsonify({
+            "message": "Transacción actualizada correctamente",
+            "id": transaccion_actualizada.id,
+            "monto": transaccion_actualizada.monto
+        }), 200
     else:
-        username = data['username']
-        
-    password = data['password']
-    
-    user = db_session.query(models.Usuario).filter(models.Usuario.email == username).first()
-    
-    if not user or not security.verify_password(password, user.password_hash):
-        return jsonify({"detail": "Credenciales incorrectas"}), 401
-        
-    access_token = security.create_access_token(
-        data={"sub": user.email, "id": user.id, "rol": user.rol}
-    )
-    
-    return jsonify({"access_token": access_token, "token_type": "bearer"}), 200
+        return jsonify({"detail": "Transacción no encontrada"}), 404
 
+@app.route("/transacciones/<int:id>", methods=['DELETE'])
+@token_required
+def delete_transaccion(current_user, id):
+    tx_service = TransaccionService(db_session)
+    if tx_service.eliminar(id):
+        return jsonify({"message": "Eliminado"}), 200
+    return jsonify({"detail": "No encontrado"}), 404
+
+# ==========================================
+# 🚀 ARRANQUE
+# ==========================================
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)

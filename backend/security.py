@@ -1,23 +1,55 @@
 import bcrypt
+import os
+from datetime import datetime, timedelta
+from jose import jwt, JWTError # Requiere: pip install python-jose
 
-# Función para verificar contraseña
+# ---------------------------------------------------
+# CONFIGURACIÓN
+# ---------------------------------------------------
+# Intenta leer la llave del .env, si no hay, usa una por defecto (Inseguro para prod, cámbialo)
+SECRET_KEY = os.getenv("SECRET_KEY", "super-secreto-cambiar-en-produccion")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 horas de sesión
+
+# ---------------------------------------------------
+# LÓGICA DE CONTRASEÑAS (Tu código aprobado)
+# ---------------------------------------------------
+
 def verify_password(plain_password, hashed_password):
-    # Convertimos a bytes si vienen como texto (MySQL a veces devuelve texto)
+    """Verifica si una contraseña plana coincide con el hash"""
     if isinstance(plain_password, str):
         plain_password = plain_password.encode('utf-8')
     if isinstance(hashed_password, str):
         hashed_password = hashed_password.encode('utf-8')
     
-    # bcrypt.checkpw devuelve True si coinciden
     return bcrypt.checkpw(plain_password, hashed_password)
 
-# Función para encriptar contraseña
 def get_password_hash(password):
+    """Genera un hash seguro para la contraseña"""
     if isinstance(password, str):
         password = password.encode('utf-8')
     
-    # Generamos un 'salt' y hasheamos
     hashed = bcrypt.hashpw(password, bcrypt.gensalt())
-    
-    # Devolvemos como string para poder guardarlo en la Base de Datos
     return hashed.decode('utf-8')
+
+# ---------------------------------------------------
+# LÓGICA DE TOKENS JWT (Lo que faltaba)
+# ---------------------------------------------------
+
+def create_access_token(data: dict):
+    """Crea un token JWT con tiempo de expiración"""
+    to_encode = data.copy()
+    
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def decode_access_token(token: str):
+    """Decodifica y valida el token. Retorna el payload o None si es inválido"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None

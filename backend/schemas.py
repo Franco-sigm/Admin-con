@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import date, datetime
 from enum import Enum
 
-# --- DEFINICIÓN DE ENUMS ---
+# --- DEFINICIÓN DE ENUMS (Globales) ---
 class EstadoPago(str, Enum):
     AL_DIA = 'AL_DIA'
     MOROSO = 'MOROSO'
@@ -30,7 +30,7 @@ class ComunidadCreate(ComunidadBase):
 
 class Comunidad(ComunidadBase):
     id: int
-    usuario_id: int  # <--- ¡AGREGADO! Vital para saber quién es el dueño
+    usuario_id: int  
     
     class Config:
         from_attributes = True
@@ -39,7 +39,8 @@ class Comunidad(ComunidadBase):
 # --- 2. SCHEMAS DE RESIDENTES ---
 class ResidenteBase(BaseModel):
     nombre: str
-    email: Optional[str] = None
+    # Usamos EmailStr para validar que sea un correo real (user@mail.com)
+    email: Optional[EmailStr] = None 
     unidad: str
     telefono: Optional[str] = None
     estado_pago: EstadoPago = EstadoPago.AL_DIA
@@ -56,15 +57,13 @@ class Residente(ResidenteBase):
 
 
 # --- 3. SCHEMAS DE TRANSACCIONES ---
-class TipoTransaccion(str, Enum):
-    INGRESO = "INGRESO"
-    EGRESO = "EGRESO"
+# (Aquí borré el Enum repetido TipoTransaccion, ya está arriba)
 
 # Esquema base
 class TransaccionBase(BaseModel):
     tipo: TipoTransaccion
     descripcion: Optional[str] = None
-    categoria: Optional[str] = None  # <--- ¡AGREGA ESTO AQUÍ!
+    categoria: Optional[str] = None
     monto: int
     fecha: date
 
@@ -77,7 +76,7 @@ class Transaccion(TransaccionBase):
     id: int
     
     class Config:
-        from_attributes = True # Antes orm_mode = True
+        from_attributes = True 
 
 
 # --- 4. SCHEMAS DE ANUNCIOS ---
@@ -92,7 +91,7 @@ class AnuncioCreate(AnuncioBase):
 class Anuncio(AnuncioBase):
     id: int
     comunidad_id: int
-    fecha_creacion: datetime
+    fecha_creacion: Optional[datetime] = None # Hacemos opcional por si la DB lo genera sola
 
     class Config:
         from_attributes = True
@@ -105,17 +104,17 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
-    id: Optional[int] = None      # <--- AGREGADO: Útil para validaciones
-    rol: Optional[str] = None     # <--- AGREGADO: Útil para permisos
+    id: Optional[int] = None      
+    rol: Optional[str] = None     
 
 
 # --- 6. ESQUEMAS DE USUARIO ---
 
 class UsuarioBase(BaseModel):
     nombre: str
-    email: str
+    email: EmailStr # Validación fuerte de email
     rol: Optional[str] = "CONSERJE" 
-    comunidad_id: Optional[int] = None # Dónde trabaja (para conserjes)
+    comunidad_id: Optional[int] = None 
 
 class UsuarioCreate(UsuarioBase):
     password: str
@@ -123,9 +122,6 @@ class UsuarioCreate(UsuarioBase):
 class Usuario(UsuarioBase):
     id: int
     # No incluimos password aquí por seguridad
-    
-    # Opcional: Para ver sus comunidades si quisieras en el futuro
-    # comunidades_creadas: List[Comunidad] = [] 
 
     class Config:
         from_attributes = True

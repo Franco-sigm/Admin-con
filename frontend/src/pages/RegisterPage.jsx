@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo-conadmin.png'; 
 import BotonSalir from '../components/BotonSalir.jsx';
 
+// 1. IMPORTAMOS NUESTRO CLIENTE AXIOS
+import api from '../api/client'; 
+
 function RegisterPage() {
   const [formData, setFormData] = useState({
     nombre: '',
@@ -17,34 +20,35 @@ function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. CAMBIO IMPORTANTE: Puerto 5000 (Flask)
-      const response = await fetch('https://api.surcode.cl/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // 2. CAMBIO IMPORTANTE: Enviamos los campos que faltaban
-        body: JSON.stringify({
-            nombre: formData.nombre,
-            email: formData.email,
-            password: formData.password,
-            rol: 'ADMINISTRADOR', // Definimos un rol por defecto si no hay selector
-            comunidad_id: null    // Enviamos null para evitar errores de validación
-        })
+      // 2. USAMOS API.POST
+      // No ponemos la URL completa. client.js ya sabe si es Localhost o Producción.
+      await api.post('/register', {
+         nombre: formData.nombre,
+         email: formData.email,
+         password: formData.password,
+         // Lógica de negocio: Quien se registra desde fuera es un ADMINISTRADOR
+         rol: 'ADMINISTRADOR', 
+         comunidad_id: null 
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("¡Cuenta creada con éxito! Por favor inicia sesión.");
-        navigate('/login');
-      } else {
-        alert(`Error: ${data.detail || "No se pudo registrar"}`);
-      }
+      // Si Axios no lanza error, es que fue un éxito (200 OK)
+      alert("¡Cuenta creada con éxito! Por favor inicia sesión.");
+      navigate('/login');
       
     } catch (error) {
-      console.error(error);
-      alert("Error de conexión con el servidor (Revisa que Flask esté corriendo en el puerto 5000).");
+      console.error("Error en registro:", error);
+      
+      // Manejo de errores profesional
+      if (error.response) {
+        // El servidor respondió con un error (ej: Email duplicado)
+        // El backend devuelve { "detail": "..." } o un array de errores de validación
+        const mensaje = error.response.data.detail 
+                        || JSON.stringify(error.response.data) 
+                        || "No se pudo registrar.";
+        alert(`Error: ${mensaje}`);
+      } else {
+        alert("Error de conexión. Verifica que el servidor esté activo.");
+      }
     } finally {
       setLoading(false);
     }
@@ -63,7 +67,7 @@ function RegisterPage() {
         <BotonSalir />
       </div>
       
-      {/* --- LADO IZQUIERDO: VISUAL (Igual que el Login para consistencia) --- */}
+      {/* --- LADO IZQUIERDO: VISUAL --- */}
       <div className="relative overflow-hidden bg-gradient-to-tr from-emerald-600 to-[oklch(50%_0.134_242.749)] flex items-center justify-center p-12 lg:p-20 hidden md:flex">
         
         {/* Decoración de fondo */}
@@ -71,22 +75,20 @@ function RegisterPage() {
         <div className="absolute bottom-12 right-12 w-64 h-64 bg-[oklch(50%_0.134_242.749)]/40 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
         {/* Tarjeta Glassmorphism */}
-       <div className="relative groupz-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
+        {/* Corregí un error de tipeo aquí: decía 'groupz-10' */}
+        <div className="relative group z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center justify-center">
               <img className="h-48 w-auto drop-shadow-lg animate-trompo" src={logo} alt="logo-ConAdmin" />
               <span className="font-bold text-3xl text-white -mt-12 tracking-tight">
                   ConAdmin
               </span>
-              </div>
-                <p className="text-emerald-100 mt-4 text-lg font-medium">
-                  Gestión inteligente para tu comunidad.
-                </p>
           </div>
+          <p className="text-emerald-100 mt-4 text-lg font-medium">
+             Gestión inteligente para tu comunidad.
+          </p>
         </div>
-                    
-                 
-                    
-
+      </div>
+                     
       {/* --- LADO DERECHO: FORMULARIO DE REGISTRO --- */}
       <div className="flex items-center justify-center p-6 sm:p-12 bg-white">
         <div className="w-full max-w-md space-y-8">
@@ -146,7 +148,6 @@ function RegisterPage() {
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(50%_0.134_242.749)] focus:border-transparent sm:text-sm transition-all"
                 />
             </div>
-
            
             <div>
               <button

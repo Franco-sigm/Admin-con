@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
 
+# Cargar variables de entorno
 load_dotenv()
 
 # --------------------------------------------------------------------------
@@ -11,21 +12,28 @@ load_dotenv()
 # --------------------------------------------------------------------------
 
 # 1. URL DE CONEXIÓN
-# (Asegúrate de que este sea tu usuario/clave/puerto correcto en local)
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "mysql+pymysql://root:admin123@localhost:3307/admin_condominios"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Validación de seguridad: Si estamos en producción y no hay URL, detenerse.
+# (Puedes dejar tu fallback local si prefieres, pero esto ayuda a detectar errores de .env)
+if not SQLALCHEMY_DATABASE_URL:
+    # produccion
+    raise ValueError("DATABASE_URL no está configurada en las variables de entorno.")
+# 2. CREAR EL MOTOR (CORREGIDO PARA CPANEL)
+# pool_recycle=280: Evita el error "MySQL server has gone away" reciclando antes de los 5 min.
+# pool_pre_ping=True: Verifica la conexión antes de cada consulta.
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, 
+    pool_recycle=280, 
+    pool_pre_ping=True
 )
 
-# 2. CREAR EL MOTOR
-engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_recycle=3600)
-
-# 3. SESIÓN (Aquí está la clave: definimos 'db_session' que Flask necesita)
+# 3. SESIÓN
 db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 # 4. BASE DECLARATIVA
 Base = declarative_base()
-Base.query = db_session.query_property() # Esto ayuda a Flask a hacer consultas más fácil
+Base.query = db_session.query_property()
 
 def init_db():
     # Importamos los modelos dentro de la función para evitar ciclos

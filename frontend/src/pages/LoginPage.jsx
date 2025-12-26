@@ -3,70 +3,73 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo-conadmin.png'; 
 import BotonSalir from '../components/BotonSalir.jsx';
 
+// IMPORTACIÓN CLAVE: Usamos tu cliente de API configurado
+import api from '../api/client'; 
+
 const LoginPage = () => {
-  // 1. TU LÓGICA DE ESTADO
+  // 1. ESTADOS
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // Agregué un estado de carga visual
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // 2. TU FUNCIÓN DE LOGIN (Adaptada a fetch para evitar errores)
+  // 2. FUNCIÓN LOGIN (Optimizada con Axios)
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // CAMBIO CLAVE: Enviamos JSON, no FormData
-      const response = await fetch('https://api.surcode.cl/token', {
-        method: 'POST',  
-        headers: {
-          'Content-Type': 'application/json', // <--- Ahora es JSON
-        },
-        body: JSON.stringify({
-          username: email, // Mapeamos tu estado 'email' al campo 'username' que espera el back
-          password: password
-        })
+      // Usamos api.post en lugar de fetch.
+      // No necesitamos poner la URL completa, api.js ya sabe la base.
+      const response = await api.post('/token', {
+        username: email, // El backend espera 'username' (aunque sea el email)
+        password: password
       });
 
-      const data = await response.json();
+      // Si llegamos aquí, es que funcionó (Axios lanza error si falla)
+      const { access_token } = response.data;
 
-      if (response.ok) {
-        // GUARDAMOS EL TOKEN
-        localStorage.setItem('token', data.access_token);
-        
-        // Redirigir
-        navigate('/home'); // Asegúrate que esta ruta exista en tu App.js
-      } else {
-        // Mostramos el mensaje exacto que devuelve el backend si existe
-        alert(data.detail || "Credenciales incorrectas");
-      }
+      // Guardamos el token
+      localStorage.setItem('token', access_token);
+      
+      console.log("Login exitoso, redirigiendo...");
+      navigate('/home'); // O '/dashboard'
+
     } catch (error) {
       console.error("Error en login:", error);
-      alert("Error de conexión con el servidor (Revisa que el puerto 5000 esté corriendo)");
+      
+      // Manejo inteligente de errores del Backend
+      if (error.response) {
+        // El servidor respondió con un error (ej: 401 Credenciales incorrectas)
+        alert(error.response.data.detail || "Error al iniciar sesión");
+      } else if (error.request) {
+        // El servidor no respondió (está caído)
+        alert("No se pudo conectar con el servidor. Verifica tu conexión.");
+      } else {
+        alert("Ocurrió un error inesperado.");
+      }
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen md:grid md:grid-cols-2 relative">
       <div className="absolute top-4 right-4 z-50">
         <BotonSalir />
       </div>
       
-      {/* --- LADO IZQUIERDO: DISEÑO VISUAL --- */}
+      {/* --- LADO IZQUIERDO: DISEÑO VISUAL (Intacto) --- */}
       <div className="relative overflow-hidden bg-gradient-to-tr from-emerald-600 to-[oklch(50%_0.134_242.749)] flex items-center justify-center p-12 lg:p-20 hidden md:flex">
         
-        {/* Decoración de fondo */}
+        {/* Decoración */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl z-0 pointer-events-none"></div>
         <div className="absolute bottom-12 right-12 w-64 h-64 bg-[oklch(50%_0.134_242.749)]/40 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
         {/* Tarjeta Glassmorphism */}
         <div className="relative group z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center justify-center">
-             
-             {/* 👇 AQUÍ CAMBIÉ h-24 POR h-40 */}
              <img className="h-48 w-auto drop-shadow-lg animate-trompo" src={logo} alt="logo-ConAdmin" />
-             
              <span className="font-bold text-3xl text-white -mt-12 tracking-tight">
                ConAdmin
              </span>
@@ -77,7 +80,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* --- LADO DERECHO: FORMULARIO FUNCIONAL --- */}
+      {/* --- LADO DERECHO: FORMULARIO --- */}
       <div className="flex items-center justify-center p-6 sm:p-12 bg-white">
         <div className="w-full max-w-md space-y-8">
           
@@ -90,7 +93,6 @@ const LoginPage = () => {
             </p>
           </div>
 
-          {/* 3. VINCULACIÓN DEL FORMULARIO */}
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             <div className="rounded-md shadow-sm space-y-4">
               <div>
@@ -103,7 +105,7 @@ const LoginPage = () => {
                   required
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(50%_0.134_242.749)] focus:border-transparent sm:text-sm transition-all"
                   placeholder="Correo electrónico"
-                  value={email} // Vinculado al estado
+                  value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
@@ -117,7 +119,7 @@ const LoginPage = () => {
                   required
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(50%_0.134_242.749)] focus:border-transparent sm:text-sm transition-all"
                   placeholder="Contraseña"
-                  value={password} // Vinculado al estado
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
