@@ -1,12 +1,12 @@
 import axios from "axios";
 
 // Aquí está la clave para Producción:
-// import.meta.env.VITE_API_URL leerá "https://api.surcode.cl" cuando hagas el build.
+// import.meta.env.VITE_API_URL leerá "https://api.surcode.cl" cuando haga el build.
 const baseURL = import.meta.env.VITE_API_URL;
 
-// Validación de seguridad por si se te olvida el archivo .env
+// Validación de seguridad por si se  olvida el archivo .env
 if (!baseURL) {
-  console.error("🚨 ERROR CRÍTICO: Falta la variable VITE_API_URL en el archivo .env");
+  console.error(" ERROR CRÍTICO: Falta la variable VITE_API_URL en el archivo .env");
 }
 
 const client = axios.create({

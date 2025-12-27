@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, Any
 from datetime import date, datetime
 from enum import Enum
+
 
 # --- DEFINICIÓN DE ENUMS (Globales) ---
 class EstadoPago(str, Enum):
@@ -45,6 +46,12 @@ class ResidenteBase(BaseModel):
     telefono: Optional[str] = None
     estado_pago: EstadoPago = EstadoPago.AL_DIA
 
+class ResidenteUpdate(BaseModel):
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
+    unidad: Optional[str] = None
+    estado_pago: Optional[str] = None
+
 class ResidenteCreate(ResidenteBase):
     comunidad_id: int
 
@@ -57,9 +64,8 @@ class Residente(ResidenteBase):
 
 
 # --- 3. SCHEMAS DE TRANSACCIONES ---
-# (Aquí borré el Enum repetido TipoTransaccion, ya está arriba)
 
-# Esquema base
+# Falta este esquema Base para que los demás funcionen
 class TransaccionBase(BaseModel):
     tipo: TipoTransaccion
     descripcion: Optional[str] = None
@@ -67,17 +73,25 @@ class TransaccionBase(BaseModel):
     monto: int
     fecha: date
 
-# Esquema para crear (Create)
+# Esquema para crear (POST)
 class TransaccionCreate(TransaccionBase):
     comunidad_id: int 
 
-# Esquema para leer (Response)
-class Transaccion(TransaccionBase):
+# Esquema para actualizar (PUT) - Súper flexible para evitar Error 400
+class TransaccionUpdate(BaseModel):
+    tipo: Optional[Any] = None  
+    descripcion: Optional[str] = None
+    categoria: Optional[str] = None
+    monto: Optional[int] = None
+    fecha: Optional[Any] = None # Permitimos Any para procesar el string del frontend
+
+# Esquema de respuesta (GET)
+class TransaccionResponse(TransaccionBase):
     id: int
+    comunidad_id: int
     
     class Config:
-        from_attributes = True 
-
+        from_attributes = True
 
 # --- 4. SCHEMAS DE ANUNCIOS ---
 class AnuncioBase(BaseModel):

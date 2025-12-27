@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv # <--- 1. IMPORTAR ESTO
 
 # 2. CARGAR VARIABLES ANTES DE CUALQUIER OTRA IMPORTACIÓN LOCAL
-# Esto asegura que cuando 'database' arranque, ya tenga la URL disponible
 load_dotenv()
 
 from flask import Flask, request, jsonify
@@ -10,7 +9,7 @@ from flask_cors import CORS
 from functools import wraps
 from pydantic import ValidationError
 
-# Importaciones locales (Mantén esto tal cual, está bien estructurado)
+# Importaciones locales
 from database import db_session, engine, Base
 import schemas
 import security
@@ -21,8 +20,8 @@ from services import UsuarioService, ComunidadService, ResidenteService, Transac
 # ==========================================
 app = Flask(__name__)
 
-# 3. SEGURIDAD ADICIONAL (Agregado desde tu .env)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave-por-defecto-insegura')
+# Seguridad
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave-super-secreta-cambiar-en-env')
 
 # Configuración CORS profesional
 CORS(app, resources={
@@ -44,7 +43,6 @@ CORS(app, resources={
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:
-    # En producción esto queda en el log de errores de cPanel
     print(f"Info DB: {e}")
 
 @app.teardown_appcontext
@@ -217,13 +215,78 @@ def get_residentes(current_user):
         for r in lista
     ]), 200
 
+# NUEVA RUTA: Para obtener un solo residente (Corrige error 405 en edición)
+@app.route("/residentes/<int:id>", methods=['GET'])
+@token_required
+def get_single_residente(current_user, id):
+    res_service = ResidenteService(db_session)
+    com_service = ComunidadService(db_session)
+
+    residente = res_service.obtener_por_id(id)
+    if not residente:
+        return jsonify({"detail": "Residente no encontrado"}), 404
+
+    # Seguridad: Verificar propiedad
+    if not com_service.validar_propiedad(residente.comunidad_id, current_user.id):
+        return jsonify({"detail": "No autorizado"}), 403
+
+    return jsonify({
+        "id": residente.id,
+        "nombre": residente.nombre,
+        "email": residente.email,
+        "unidad": residente.unidad,
+        "estado_pago": residente.estado_pago,
+        "comunidad_id": residente.comunidad_id
+    }), 200
+
 @app.route("/residentes/<int:id>", methods=['DELETE'])
 @token_required
 def delete_residente(current_user, id):
     res_service = ResidenteService(db_session)
+    com_service = ComunidadService(db_session)
+
+    # 1. Buscar al residente
+    residente = res_service.obtener_por_id(id)
+    if not residente:
+        return jsonify({"detail": "Residente no encontrado"}), 404
+
+    # 2. SEGURIDAD: ¿Es tu edificio?
+    if not com_service.validar_propiedad(residente.comunidad_id, current_user.id):
+        return jsonify({"detail": "No tienes permiso para eliminar residentes de esta comunidad"}), 403
+
+    # 3. Eliminar
     if res_service.eliminar(id):
         return jsonify({"message": "Residente eliminado"}), 200
-    return jsonify({"detail": "No encontrado"}), 404
+    return jsonify({"detail": "Error al eliminar"}), 400
+
+@app.route("/residentes/<int:id>", methods=['PUT'])
+@token_required
+def update_residente(current_user, id):
+    data = request.get_json()
+    
+    res_service = ResidenteService(db_session)
+    com_service = ComunidadService(db_session) 
+    
+    # 1. Buscar el residente primero
+    residente_db = res_service.obtener_por_id(id)
+    if not residente_db:
+        return jsonify({"detail": "Residente no encontrado"}), 404
+
+    # 2. SEGURIDAD: Validación de Propiedad
+    if not com_service.validar_propiedad(residente_db.comunidad_id, current_user.id):
+        return jsonify({"detail": "⛔ ACCESO DENEGADO: No puedes editar residentes de otra comunidad"}), 403
+
+    # 3. Actualizar con validación
+    try:
+        schema = schemas.ResidenteUpdate(**data) 
+        residente_actualizado = res_service.actualizar(id, schema)
+        
+        return jsonify({
+            "message": "Residente actualizado", 
+            "nombre": residente_actualizado.nombre
+        }), 200
+    except Exception as e:
+        return jsonify({"detail": str(e)}), 400
 
 # ==========================================
 # 💰 RUTAS DE TRANSACCIONES
@@ -263,24 +326,55 @@ def get_transacciones(current_user, comunidad_id):
 def update_transaccion(current_user, transaccion_id):
     data = request.get_json()
     tx_service = TransaccionService(db_session)
-    transaccion_actualizada = tx_service.actualizar(transaccion_id, data)
-    
-    if transaccion_actualizada:
-        return jsonify({
-            "message": "Transacción actualizada correctamente",
-            "id": transaccion_actualizada.id,
-            "monto": transaccion_actualizada.monto
-        }), 200
-    else:
+    com_service = ComunidadService(db_session)
+
+    # 1. Buscar la transacción
+    transaccion = tx_service.obtener_por_id(transaccion_id)
+    if not transaccion:
         return jsonify({"detail": "Transacción no encontrada"}), 404
+
+    # 2. SEGURIDAD: ¿Es tu edificio?
+    if not com_service.validar_propiedad(transaccion.comunidad_id, current_user.id):
+        return jsonify({"detail": "No tienes permiso para editar esta transacción"}), 403
+
+    # 3. Actualizar
+    try:
+        # IMPORTANTE: Validamos los datos con el Schema antes de actualizar
+        schema = schemas.TransaccionUpdate(**data)
+        transaccion_actualizada = tx_service.actualizar(transaccion_id, schema)
+        
+        if transaccion_actualizada:
+            return jsonify({
+                "message": "Transacción actualizada correctamente",
+                "id": transaccion_actualizada.id,
+                "monto": transaccion_actualizada.monto
+            }), 200
+    except ValidationError as e:
+        return jsonify(e.errors()), 400
+    except Exception as e:
+         return jsonify({"detail": str(e)}), 400
+    
+    return jsonify({"detail": "Error al actualizar"}), 400
 
 @app.route("/transacciones/<int:id>", methods=['DELETE'])
 @token_required
 def delete_transaccion(current_user, id):
     tx_service = TransaccionService(db_session)
+    com_service = ComunidadService(db_session)
+
+    # 1. Buscar primero
+    transaccion = tx_service.obtener_por_id(id)
+    if not transaccion:
+        return jsonify({"detail": "Transacción no encontrada"}), 404
+
+    # 2. SEGURIDAD
+    if not com_service.validar_propiedad(transaccion.comunidad_id, current_user.id):
+        return jsonify({"detail": "No autorizado"}), 403
+
+    # 3. Eliminar
     if tx_service.eliminar(id):
         return jsonify({"message": "Eliminado"}), 200
-    return jsonify({"detail": "No encontrado"}), 404
+    return jsonify({"detail": "Error al eliminar"}), 400
 
 # ==========================================
 # 🚀 ARRANQUE
