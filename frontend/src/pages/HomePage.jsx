@@ -158,7 +158,7 @@ function HomePage() {
         </div>
         <button 
            onClick={abrirModalNuevo}
-           className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-medium rounded-lg transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
+           className="px-6 py-3 bg-[oklch(50%_0.134_242.749)] hover:bg-black text-white font-medium rounded-lg transition shadow-lg hover:shadow-xl flex items-center gap-2 text-sm"
         >
            <span>+</span> Crear Comunidad
         </button>
@@ -344,7 +344,7 @@ function HomePage() {
             
                 <button 
                   type="submit" 
-                  className="px-6 py-2.5 bg-gray-900 hover:bg-black text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 text-sm"
+                  className="px-6 py-2.5 bg-[oklch(50%_0.134_242.749)] hover:bg-black text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 text-sm"
                 >
                   {idEdicion ? 'Guardar Cambios' : 'Crear Comunidad'}
                 </button>

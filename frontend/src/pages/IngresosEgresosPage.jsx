@@ -110,7 +110,7 @@ const IngresosEgresosPage = () => {
         </div>
         <button 
           onClick={openNewModal}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow transition duration-200 flex items-center gap-2"
+          className="bg-[oklch(50%_0.134_242.749)] hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow transition duration-200 flex items-center gap-2 "
         >
           <span>+ Registrar Movimiento</span>
         </button>

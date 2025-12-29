@@ -11,7 +11,7 @@ function LandingPage() {
         
         <div className="flex items-center gap-3">
              <img className="h-12 w-auto animate-trompo" src={logo} alt="logo-ConAdmin" />
-             <span className="font-bold text-xl hidden sm:block tracking-tight">
+             <span className="font-bold text-xl hidden sm:block tracking-tight -ml-8 -mt-2">
                 CON<span className="text-[oklch(50%_0.134_242.749)]">ADMIN</span>
              </span>
         </div>
@@ -118,13 +118,13 @@ function LandingPage() {
       <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
-                <p className="text-white font-bold text-lg mb-1">ConAdmin v1.0</p>
+                <p className="text-white font-bold text-lg mb-1">MVP</p>
                 <p className="text-sm">Desarrollado por <span className="text-white">Franco Fernando Cañete Herrera</span></p>
             </div>
             
             <div className="text-sm text-center md:text-right">
                 <p>Proyecto para optar al título de:</p>
-                <p className="text-indigo-400 font-medium">Técnico en Análisis y Programación Computacional</p>
+                <p className="text-indigo-400 font-medium">Técnico de nivel superior en Análisis y Programación Computacional</p>
                 <p className="mt-2 text-xs opacity-50">IACC - 2025-2026</p>
             </div>
         </div>

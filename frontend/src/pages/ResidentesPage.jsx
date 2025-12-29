@@ -113,15 +113,15 @@ function ResidentesPage() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
-            <h2 className="text-2xl font-bold text-gray-800">👥 Padrón de Residentes</h2>
-            <p className="text-gray-500 text-sm">Gestiona los propietarios y arrendatarios de la comunidad</p>
+            <h2 className="text-2xl font-bold text-gray-800">Padrón de Residentes</h2>
+            <p className="text-gray-500 text-sm">Gestiona los propietarios de la comunidad</p>
         </div>
         <button 
           onClick={() => { 
             setFormResidente(INITIAL_FORM_STATE); 
             setMostrarModal(true); 
           }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition flex items-center gap-2"
+          className="bg-[oklch(50%_0.134_242.749)] text-white font-semibold py-2 px-4 rounded-lg shadow-md transition flex items-center gap-2"
         >
           <span>+</span> Nuevo Residente
         </button>
@@ -182,7 +182,7 @@ function ResidentesPage() {
         )}
       </div>
 
-      {/* MODAL (Sin cambios lógicos, solo asegurate que los inputs tengan names correctos) */}
+      {/* MODAL (formulario de ingreso de residentes) */}
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={cerrarModal}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-down" onClick={(e) => e.stopPropagation()}>
@@ -218,7 +218,7 @@ function ResidentesPage() {
               </div>
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <button type="button" onClick={cerrarModal} className="px-4 py-2 text-gray-700 bg-white border rounded-lg">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">{formResidente.id ? 'Guardar' : 'Crear'}</button>
+                <button type="submit" className="px-6 py-2 bg-[oklch(50%_0.134_242.749)] text-white rounded-lg font-bold">{formResidente.id ? 'Guardar' : 'Crear'}</button>
               </div>
             </form>
           </div>

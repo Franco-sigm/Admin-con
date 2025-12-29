@@ -97,7 +97,7 @@ function DashboardPage() {
         </div>
         <div className="mt-4 md:mt-0">
           <span className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium shadow-sm capitalize">
-            📅 {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+             {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </span>
         </div>
       </div>
@@ -112,7 +112,7 @@ function DashboardPage() {
             <p className="text-2xl font-bold text-gray-800 mt-1">{stats.totalResidentes}</p>
           </div>
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl">
-            👥
+            🧑‍🤝‍🧑
           </div>
         </div>
 
@@ -123,7 +123,7 @@ function DashboardPage() {
             <p className="text-2xl font-bold text-gray-800 mt-1">{stats.unidadesOcupadas}</p>
           </div>
           <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center text-xl">
-            🏢
+            🏠
           </div>
         </div>
 
@@ -135,7 +135,7 @@ function DashboardPage() {
             <span className="text-xs text-orange-500 font-bold">Próximamente</span>
           </div>
           <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center text-xl">
-            🔔
+            🕒
           </div>
         </div>
 
@@ -148,7 +148,7 @@ function DashboardPage() {
             </p>
           </div>
           <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center text-xl">
-            💰
+            
           </div>
         </div>
       </div>
