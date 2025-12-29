@@ -154,7 +154,7 @@ function HomePage() {
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
         <div>
            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Mis Condominios</h1>
-           <p className="text-gray-500 mt-1">Administra tus comunidades desde un solo lugar</p>
+           <p className="text-gray-500 mt-1">Comienza creando el espacio de administracion de tu comunidad</p>
         </div>
         <button 
            onClick={abrirModalNuevo}
@@ -239,8 +239,8 @@ function HomePage() {
                      <span className="bg-gray-100 px-2 py-0.5 rounded text-xs text-gray-600 font-bold">{comunidad.unidades_totales}</span>
                      <span>Unidades</span>
                    </div>
-                   <span className="text-indigo-600 font-semibold group-hover:translate-x-1 transition-transform text-xs uppercase tracking-wide">
-                     Gestionar &rarr;
+                   <span className="text-[oklch(50%_0.134_242.749)] font-semibold group-hover:translate-x-1 transition-transform text-xs uppercase tracking-wide">
+                     Ingresar a unidad &rarr;
                    </span>
                 </div>
               </div>

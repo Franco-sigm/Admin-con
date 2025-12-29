@@ -1,53 +1,45 @@
-#  AdminCon (Prototipado de Alta Fidelidad) | Sistema de Gestión de Comunidades Residenciales [Frontend MVP] Proyecto de mejora para validacion de practica laboral para Comunidad Parque Suizo 900]
+# 🏢 SurCode - Sistema de Gestión de Comunidades
 
-Este proyecto es la **capa de presentación y lógica del cliente** para un futuro sistema full-stack. Su propósito es demostrar la arquitectura de navegación, la persistencia de datos en el cliente y las funcionalidades esenciales de los módulos.
+¡Bienvenido a **SurCode**! Una solución integral, moderna y elegante diseñada para simplificar la administración de edificios y comunidades. Este sistema permite gestionar residentes, registrar flujos de caja en tiempo real y visualizar estadísticas clave a través de un panel de control intuitivo.
 
----
-
-## 1.  Arquitectura y Tecnologías (Estado Actual)
-
-El sistema opera como una **Aplicación de Múltiples Páginas (MPA)**, con lógica de estado distribuida en el navegador.
-
-| Herramienta | Función |
-| :--- | :--- |
-| **Vite** | Empaquetador y Servidor de desarrollo (MPA). |
-| **JavaScript (Vanilla JS)** | Lógica de la aplicación, control del DOM, validación y gestión de estado. |
-| **Tailwind CSS** | Estilizado modular y responsivo. |
-| **LocalStorage** | **Capa de Datos Simulada (Backend Mocking)**. Se utiliza actualmente para persistir la autenticación y los datos de la comunidad /resitemporalmentedentesuh. Proximamente se integrara base de datos real  . |
+![Dashboard Preview](![alt text](image.png)) 
+*(Sugerencia: Reemplaza esta imagen con una captura de pantalla real de tu panel)*
 
 ---
 
-## 2. Módulos Implementados (Funcionalidad Actual)
+## 🚀 Características Principales
 
-Las siguientes funcionalidades están completas y operativas en el Frontend:
-
-### A. Gestión de Propietarios (CRUD)
-* **Control de Estado:** Funcionalidad CRUD completa para agregar, listar y eliminar propietarios.
-* **Vínculo Dinámico:** La cantidad de propietarios se refleja dinámicamente en el Dashboard.
-
-### B. Módulo Financiero (Reporte de Balance)
-* **Cálculo de Balance:** Lógica de cálculo implementada para sumar Ingresos y Egresos y determinar el Balance Neto.
-* **Visualización:** Reportes mensuales/anuales con filtros de periodo y tabla de historial de transacciones.
-* **Input de Datos:** Lógica base lista para conectarse al formulario de `nueva-transaccion`.
-
-### C. Sistema de Navegación
-* **Rutas Dinámicas:** El `comunidadId` se pasa automáticamente por la URL en todas las vistas (Dashboard, Residentes, Pagos/Gastos).
-* **Control de Estado Activo:** Lógica de JS para marcar el enlace activo del Sidebar con color azul en cada recarga de página.
-* **Autenticación:** Flujo de Login y Registro operativo (con datos guardados en `localStorage`).
+* **📊 Dashboard Inteligente:** Visualización de KPIs como total de residentes, unidades ocupadas y balance mensual.
+* **📈 Gráficos de Flujo de Caja:** Gráficos profesionales (Recharts) con gradientes para monitorear ingresos y egresos.
+* **👥 Gestión de Residentes:** Registro completo y control de unidades habitacionales.
+* **💰 Control Financiero:** Registro detallado de transacciones con filtros por tipo (Ingreso/Egreso).
+* **🔐 Seguridad Avanzada:** Autenticación mediante JWT (JSON Web Tokens) y protección de rutas por comunidad.
+* **⚡ Interfaz Premium:** Diseño sobrio y minimalista construido con Tailwind CSS e iconos de Lucide React.
 
 ---
 
-## 3. 🛠️ Instrucciones de Ejecución
+## 🛠️ Stack Tecnológico
 
-Para levantar el proyecto en su estado actual (Frontend MVP):
+### Frontend
+- **React.js** (Vite)
+- **Tailwind CSS** (Estilos modernos y responsivos)
+- **Recharts** (Visualización de datos)
+- **Lucide React** (Iconografía profesional)
+- **Axios** (Consumo de API)
 
-1.  **Navegar:** Ir a la carpeta `frontend/`.
-2.  **Instalar dependencias:** `npm install`
-3.  **Ejecutar Servidor:** `npm run dev`
-    * *La aplicación se abrirá en `http://localhost:5173/` (página de Login/Registro).*
+### Backend
+- **Python (Flask)**
+- **SQLAlchemy** (ORM para base de datos)
+- **MySQL** (Persistencia de datos)
+- **Pydantic** (Validación de esquemas y tipos)
+- **CORS** (Configuración de seguridad entre dominios)
 
 ---
 
-### Próximos Pasos
+## ⚙️ Instalación y Configuración
 
-El siguiente paso es la **implementación del Backend con FastAPI y MySQL** para reemplazar la capa simulada de `localStorage`.
+### Requisitos previos
+- Node.js (v18+)
+- Python (v3.10+)
+- MySQL
+
