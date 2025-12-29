@@ -1,4 +1,4 @@
-# 🏢 SurCode - Sistema de Gestión de Comunidades
+# CONADMIN - Sistema de Gestión de Comunidades
 
 ¡Bienvenido a **CONADMIN**! Una solución integral, moderna y elegante diseñada para simplificar la administración de edificios y comunidades. Este sistema permite gestionar residentes, registrar flujos de caja en tiempo real y visualizar estadísticas clave a través de un panel de control intuitivo.
 ![alt text](image-1.png) 
@@ -6,7 +6,7 @@
 
 ---
 
-## 🚀 Características Principales
+##  Características Principales
 
 * ** Dashboard Inteligente:** Visualización de KPIs como total de residentes, unidades ocupadas y balance mensual.
 * ** Gestión de Residentes:** Registro completo y control de unidades habitacionales.
