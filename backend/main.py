@@ -27,12 +27,10 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'clave-super-secreta-cambiar-
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://www.surcode.cl", 
-            "https://surcode.cl", 
-            "https://api.surcode.cl",
-            "https://www.api.surcode.cl",
-            "http://localhost:5173",
-            "http://127.0.0.1:5173"
+            "https://conadmin.cl",       # Dominio principal
+            "https://www.conadmin.cl",   # Subdominio www
+            "http://localhost:5173",     # Desarrollo local
+            "http://127.0.0.1:5173"  
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Origin"]

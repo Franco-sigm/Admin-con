@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Aquí está la clave para Producción:
-// import.meta.env.VITE_API_URL leerá "https://api.surcode.cl" cuando haga el build.
+//
 const baseURL = import.meta.env.VITE_API_URL;
 
 // Validación de seguridad por si se  olvida el archivo .env
