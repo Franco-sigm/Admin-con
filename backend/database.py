@@ -15,13 +15,13 @@ load_dotenv()
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Validación de seguridad: Si estamos en producción y no hay URL, detenerse.
-# (Puedes dejar tu fallback local si prefieres, pero esto ayuda a detectar errores de .env)
+# 
 if not SQLALCHEMY_DATABASE_URL:
     # produccion
     raise ValueError("DATABASE_URL no está configurada en las variables de entorno.")
 # 2. CREAR EL MOTOR (CORREGIDO PARA CPANEL)
 # pool_recycle=280: Evita el error "MySQL server has gone away" reciclando antes de los 5 min.
-# pool_pre_ping=True: Verifica la conexión antes de cada consulta.
+# pool_pre_ping=True: Verificar la conexión antes de cada consulta.
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, 
     pool_recycle=280, 

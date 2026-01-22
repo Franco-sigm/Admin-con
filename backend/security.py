@@ -12,7 +12,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 horas de sesión
 
 # ---------------------------------------------------
-# LÓGICA DE CONTRASEÑAS (Tu código aprobado)
+# LÓGICA DE CONTRASEÑAS (código aprobado)
 # ---------------------------------------------------
 
 def verify_password(plain_password, hashed_password):
@@ -32,9 +32,7 @@ def get_password_hash(password):
     hashed = bcrypt.hashpw(password, bcrypt.gensalt())
     return hashed.decode('utf-8')
 
-# ---------------------------------------------------
-# LÓGICA DE TOKENS JWT (Lo que faltaba)
-# ---------------------------------------------------
+
 
 def create_access_token(data: dict):
     """Crea un token JWT con tiempo de expiración"""

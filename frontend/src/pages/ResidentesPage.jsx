@@ -107,6 +107,18 @@ function ResidentesPage() {
     }
   }
 
+  const [busqueda, setBusqueda] = useState('');
+
+  const residentesFiltrados = residentes.filter((res) => {
+    // Convertimos todo a minúsculas para que "juan" encuentre a "Juan"
+    const textoBusqueda = busqueda.toLowerCase();
+    const nombre = res.nombre?.toLowerCase() || '';
+    const unidad = res.unidad?.toLowerCase() || '';
+
+    // Retorna TRUE si el nombre O la unidad coinciden con la búsqueda
+    return nombre.includes(textoBusqueda) || unidad.includes(textoBusqueda);
+  });
+
   // ... (El resto de tu JSX visual estaba perfecto, mantenlo igual)
   return (
     <div className="mt-2 relative p-4">
@@ -115,6 +127,24 @@ function ResidentesPage() {
         <div>
             <h2 className="text-2xl font-bold text-gray-800">Padrón de Residentes</h2>
             <p className="text-gray-500 text-sm">Gestiona los propietarios de la comunidad</p>
+        </div>
+
+        {/* 3. BARRA DE BÚSQUEDA UI */}
+        <div className="relative w-full md:w-64">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            {/* Icono Lupa SVG */}
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          
+          <input
+            type="text"
+            placeholder="Buscar por nombre o unidad..."
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
         </div>
         <button 
           onClick={() => { 
@@ -152,7 +182,7 @@ function ResidentesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {residentes.map((res) => (
+                {residentesFiltrados.map((res) => (
                   <tr key={res.id} className="hover:bg-gray-50 transition">
                     <td className="px-5 py-4 whitespace-nowrap text-sm font-bold text-gray-700">{res.unidad}</td>
                     <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{res.nombre}</td>

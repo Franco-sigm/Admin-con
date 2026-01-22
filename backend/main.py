@@ -287,7 +287,7 @@ def update_residente(current_user, id):
         return jsonify({"detail": str(e)}), 400
 
 # ==========================================
-# 💰 RUTAS DE TRANSACCIONES
+#  RUTAS DE TRANSACCIONES
 # ==========================================
 
 @app.route("/transacciones", methods=['POST'])

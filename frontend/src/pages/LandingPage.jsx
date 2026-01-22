@@ -31,7 +31,7 @@ function LandingPage() {
       <header className="px-6 py-20 text-center bg-gradient-to-b from-indigo-50 via-white to-white">
         <div className="max-w-4xl mx-auto animate-fade-in-up">
             <span className="inline-block py-1 px-3 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold mb-6 border border-indigo-200">
-                Proyecto de mejora para práctica profesional IACC 2025
+                Proyecto de mejora para comunidad Parque suizo 900 para práctica profesional IACC 2025
             </span>
             <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
                 La forma moderna de administrar <span className="text-[oklch(50%_0.134_242.749)]">tu comunidad</span>
