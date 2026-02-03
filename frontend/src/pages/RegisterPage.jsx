@@ -148,7 +148,7 @@ function RegisterPage() {
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(50%_0.134_242.749)] focus:border-transparent sm:text-sm transition-all"
                 />
             </div>
-            {/*
+            
             <div>
               <button
                 type="submit"
@@ -162,7 +162,7 @@ function RegisterPage() {
                 {loading ? 'Registrando...' : 'Registrarse'}
               </button>
             </div>
-              */}
+              
           </form>
            
            {/* Footer: Ir al Login */}

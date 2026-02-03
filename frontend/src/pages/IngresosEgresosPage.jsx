@@ -92,7 +92,7 @@ const IngresosEgresosPage = () => {
     setIsModalOpen(true);
   };
 
-  // --- CÁLCULOS (Tu lógica está perfecta) ---
+  // --- CÁLCULOS (lógica  perfecta) ---
   const totalIncome = transactions.filter(t => t.tipo === 'INGRESO').reduce((acc, curr) => acc + (curr.monto || 0), 0);
   const totalExpense = transactions.filter(t => t.tipo === 'EGRESO').reduce((acc, curr) => acc + (curr.monto || 0), 0);
   const balance = totalIncome - totalExpense;

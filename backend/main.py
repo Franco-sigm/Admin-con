@@ -1,10 +1,10 @@
 import os 
 from dotenv import load_dotenv # <--- 1. IMPORTAR ESTO
 
-# 2. CARGAR VARIABLES ANTES DE CUALQUIER OTRA IMPORTACIÓN LOCAL
+
 load_dotenv()
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from functools import wraps
 from pydantic import ValidationError
@@ -13,7 +13,9 @@ from pydantic import ValidationError
 from database import db_session, engine, Base
 import schemas
 import security
+from services.informe_service import InformeService
 from services import UsuarioService, ComunidadService, ResidenteService, TransaccionService
+
 
 # ==========================================
 # ⚙️ CONFIGURACIÓN INICIAL
@@ -374,6 +376,35 @@ def delete_transaccion(current_user, id):
         return jsonify({"message": "Eliminado"}), 200
     return jsonify({"detail": "Error al eliminar"}), 400
 
+# informes
+@app.route('/informes/generar', methods=['POST'])
+def generar_informe_endpoint(): # Si activas el token, agrega (current_user) aquí
+    data = request.get_json()
+    
+    if not data.get('comunidad_id'):
+        return jsonify({'error': 'Falta el ID de la comunidad'}), 400
+
+    try:
+        # ✅ CORRECCIÓN AQUÍ: 
+        # Usamos 'db_session' (que importaste arriba) en lugar de 'db.session'
+        service = InformeService(db_session)
+        
+        # ID temporal (cuando actives @token_required usa current_user.id)
+        usuario_id_mock = 1 
+        
+        pdf_file = service.generar_pdf(data, usuario_id=usuario_id_mock)
+        
+        return send_file(
+            pdf_file,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f"reporte_{data.get('tipo', 'general')}.pdf"
+        )
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 # ==========================================
 # 🚀 ARRANQUE
 # ==========================================

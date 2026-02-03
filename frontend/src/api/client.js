@@ -1,7 +1,5 @@
 import axios from "axios";
 
-// Aquí está la clave para Producción:
-//
 const baseURL = import.meta.env.VITE_API_URL;
 
 // Validación de seguridad por si se  olvida el archivo .env

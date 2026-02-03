@@ -13,10 +13,7 @@ class TipoTransaccion(str, Enum):
     INGRESO = 'INGRESO'
     EGRESO = 'EGRESO'
 
-class PrioridadAnuncio(str, Enum):
-    alta = 'alta'
-    normal = 'normal'
-    baja = 'baja'
+
 
 
 # --- 1. SCHEMAS DE COMUNIDAD ---
@@ -93,22 +90,7 @@ class TransaccionResponse(TransaccionBase):
     class Config:
         from_attributes = True
 
-# --- 4. SCHEMAS DE ANUNCIOS ---
-class AnuncioBase(BaseModel):
-    titulo: str
-    prioridad: PrioridadAnuncio = PrioridadAnuncio.normal
-    mensaje: str
 
-class AnuncioCreate(AnuncioBase):
-    comunidad_id: int
-
-class Anuncio(AnuncioBase):
-    id: int
-    comunidad_id: int
-    fecha_creacion: Optional[datetime] = None # Hacemos opcional por si la DB lo genera sola
-
-    class Config:
-        from_attributes = True
 
 
 # --- 5. ESQUEMAS DE TOKEN ---

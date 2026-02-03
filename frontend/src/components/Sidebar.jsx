@@ -85,6 +85,14 @@ function Sidebar({ comunidadId, nombreComunidad = "Cargando..." }) {
             Ingresos y Egresos
           </span>
         </Link>
+
+        {/* Link: Informes */}
+        <Link to={`/comunidad/${comunidadId}/informes`} className={getLinkClasses('informes')} title="Informes y Reportes">
+           <svg className="w-6 h-6 min-w-[24px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-6a2 2 0 012-2h6M9 17H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.343M9 17l3 3m0 0l3-3m-3 3V10m0 0l3-3m-3 3L6 7"></path></svg>
+           <span className={`transition-all duration-200 whitespace-nowrap ${isCollapsed ? 'w-0 overflow-hidden opacity-0' : 'w-auto opacity-100'}`}>
+            Informes y Reportes
+          </span>
+        </Link>
         
       </nav>
 

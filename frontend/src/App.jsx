@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage'
 import DashboardPage from './pages/DashboardPage'
 import ResidentesPage from './pages/ResidentesPage'
 import IngresosEgresosPage from './pages/IngresosEgresosPage'
+import InformesPage from './pages/InformesPage'
 
 // Componentes Globales
 import Navbar from './components/Navbar'
@@ -97,6 +98,7 @@ function App() {
                {/* Módulos */}
                <Route path="residentes" element={<ResidentesPage />} />
                <Route path="finanzas" element={<IngresosEgresosPage />} />
+                <Route path="informes" element={<InformesPage />} />
                
               {/* Aquí agregarás más módulos en el futuro (Conserjería, Anuncios, etc.) */}
                

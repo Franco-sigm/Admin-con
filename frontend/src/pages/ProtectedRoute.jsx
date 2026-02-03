@@ -8,7 +8,7 @@ const ProtectedRoute = () => {
   if (!token) {
     // Redirigir al Login.
     // TRUCO PRO: Pasamos "state={{ from: location }}"
-    // Así, si en el futuro mejoras tu Login, podrás redirigirlo 
+    // Así, si en el futuro mejora el Login, podré redirigirlo 
     // a la página exacta donde quería ir, en vez de siempre al Home.
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

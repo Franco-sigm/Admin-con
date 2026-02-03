@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
+from sqlalchemy.sql import func
 import datetime
 
 # 1. TABLA COMUNIDADES
@@ -16,7 +17,7 @@ class Comunidad(Base):
     # --- RELACIONES CON EL CONTENIDO ---
     residentes = relationship("Residente", back_populates="comunidad")
     transacciones = relationship("Transaccion", back_populates="comunidad")
-    anuncios = relationship("Anuncio", back_populates="comunidad")
+   
     
     # --- RELACIÓN 1: DUEÑO/ADMIN (Quién creó la comunidad) ---
     usuario_id = Column(Integer, ForeignKey("usuarios.id")) 
@@ -74,15 +75,14 @@ class Transaccion(Base):
 
     comunidad = relationship("Comunidad", back_populates="transacciones")
 
-# 4. Tabla Anuncios (Dashboard)
-class Anuncio(Base):
-    __tablename__ = "anuncios"
+class HistorialInforme(Base):
+    __tablename__ = 'historial_informes'
 
     id = Column(Integer, primary_key=True, index=True)
-    comunidad_id = Column(Integer, ForeignKey("comunidades.id"))
-    titulo = Column(String(150))
-    prioridad = Column(Enum('alta', 'normal', 'baja'), default='normal')
-    mensaje = Column(Text)
-    fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
+    tipo = Column(String(50), nullable=False) # Ej: "Balance Mensual", "Lista Residentes"
+    parametros = Column(String(100))          # Ej: "Mes: 05, Año: 2025"
+    fecha_generacion = Column(DateTime, server_default=func.now())
+    
+    # Relación: Un informe es generado por un Usuario
+    usuario_id = Column(Integer, ForeignKey('usuarios.id'))
 
-    comunidad = relationship("Comunidad", back_populates="anuncios")
