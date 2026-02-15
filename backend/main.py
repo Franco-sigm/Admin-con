@@ -396,18 +396,43 @@ def delete_transaccion(current_user, id):
     return jsonify({"detail": "Error al eliminar"}), 400
 
 #informes
-@app.route("/informes", methods=['POST'])
-@token_required
-def generar_informe(current_user):
-    data = request.get_json()
-    informe_service = InformeService(db_session)
+# --- RUTA 1: Listado de Morosos ---
+@app.route('/informes/morosidad', methods=['GET', 'OPTIONS'])
+def reporte_morosidad():
+    # 1. Atajar la petición fantasma (CORS)
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    comunidad_id = request.args.get('comunidad_id')
+    if not comunidad_id:
+        return jsonify({"error": "Falta el ID de la comunidad"}), 400
+
     try:
-        datos = informe_service.obtener_datos_informe(data, current_user.id)
+        # ⚠️ OJO AQUÍ: Asegúrate de que 'db.session' es como llamas a tu BD en main.py
+        datos = InformeService.obtener_morosos_por_comunidad(db_session, comunidad_id)
         return jsonify(datos), 200
-    except ValueError as e:
-        return jsonify({"detail": str(e)}), 400
     except Exception as e:
-        return jsonify({"detail": "Error al generar informe", "error": str(e)}), 500
+        print(f"Error real en morosidad: {e}") # Esto imprimirá el error en la consola
+        return jsonify({"error": "Error interno al generar reporte de morosos"}), 500
+
+
+# --- RUTA 2: Balance Financiero ---
+@app.route('/informes/balance', methods=['GET', 'OPTIONS'])
+def reporte_balance():
+    # 1. Atajar la petición fantasma (CORS)
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    comunidad_id = request.args.get('comunidad_id')
+    if not comunidad_id:
+        return jsonify({"error": "Falta el ID de la comunidad"}), 400
+
+    try:
+        datos = InformeService.obtener_balance_comunidad(db_session, comunidad_id)
+        return jsonify(datos), 200
+    except Exception as e:
+        print(f"Error real en balance: {e}") 
+        return jsonify({"error": "Error interno al generar el balance"}), 500
 # ==========================================
 # 🚀 ARRANQUE
 # ==========================================
