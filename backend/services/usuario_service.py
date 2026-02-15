@@ -30,8 +30,7 @@ class UsuarioService:
             nombre=datos.nombre,
             email=datos.email,
             password_hash=hashed_password,
-            rol=datos.rol,
-            comunidad_id=datos.comunidad_id
+           
         )
         self.db.add(nuevo_usuario)
         self.db.commit()

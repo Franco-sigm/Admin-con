@@ -1,21 +1,22 @@
 import os 
-from dotenv import load_dotenv # <--- 1. IMPORTAR ESTO
-
+from dotenv import load_dotenv 
 
 load_dotenv()
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify 
 from flask_cors import CORS
 from functools import wraps
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 
 # Importaciones locales
 from database import db_session, engine, Base
 import schemas
 import security
+
+# Servicios
 from services.informe_service import InformeService
 from services import UsuarioService, ComunidadService, ResidenteService, TransaccionService
-
 
 # ==========================================
 # ⚙️ CONFIGURACIÓN INICIAL
@@ -115,7 +116,7 @@ def login():
         return jsonify({"detail": "Credenciales incorrectas"}), 401
         
     access_token = security.create_access_token(
-        data={"sub": user.email, "id": user.id, "rol": user.rol}
+        data={"sub": user.email, "id": user.id}
     )
     return jsonify({"access_token": access_token, "token_type": "bearer"}), 200
 
@@ -181,21 +182,39 @@ def update_comunidad(current_user, id):
 # ==========================================
 # 👥 RUTAS DE RESIDENTES
 # ==========================================
-
 @app.route("/residentes", methods=['POST'])
 @token_required
 def create_residente(current_user):
     data = request.get_json()
     com_service = ComunidadService(db_session)
     res_service = ResidenteService(db_session)
+    
     try:
         schema = schemas.ResidenteCreate(**data)
+        
+        # Validar permisos
         if not com_service.validar_propiedad(schema.comunidad_id, current_user.id):
             return jsonify({"detail": "No tienes permiso en esta comunidad"}), 403
+            
+        # Crear residente
         nuevo = res_service.crear(schema)
         return jsonify({"id": nuevo.id, "nombre": nuevo.nombre}), 200
+        
     except ValidationError as e:
+        # Error de Pydantic (ej: faltan datos o el formato del correo está mal)
         return jsonify(e.errors()), 400
+        
+    except IntegrityError as e:
+        # 🌟 2. CAPTURA DE DUPLICADOS EN LA BASE DE DATOS
+        db_session.rollback()  # ¡Crucial! Deshace la transacción para que Flask no se cuelgue
+        
+        error_msg = str(e.orig).lower()
+        
+        # Revisamos qué candado saltó para dar un mensaje exacto
+        if "uq_comunidad_unidad" in error_msg:
+            return jsonify({"detail": "Esta unidad ya tiene un residente asignado en esta comunidad."}), 400
+        else:
+            return jsonify({"detail": "Error de duplicidad en la base de datos."}), 400
 
 @app.route("/residentes", methods=['GET'])
 @token_required
@@ -376,37 +395,22 @@ def delete_transaccion(current_user, id):
         return jsonify({"message": "Eliminado"}), 200
     return jsonify({"detail": "Error al eliminar"}), 400
 
-# informes
-@app.route('/informes/generar', methods=['POST'])
-def generar_informe_endpoint(): # Si activas el token, agrega (current_user) aquí
+#informes
+@app.route("/informes", methods=['POST'])
+@token_required
+def generar_informe(current_user):
     data = request.get_json()
-    
-    if not data.get('comunidad_id'):
-        return jsonify({'error': 'Falta el ID de la comunidad'}), 400
-
+    informe_service = InformeService(db_session)
     try:
-        # ✅ CORRECCIÓN AQUÍ: 
-        # Usamos 'db_session' (que importaste arriba) en lugar de 'db.session'
-        service = InformeService(db_session)
-        
-        # ID temporal (cuando actives @token_required usa current_user.id)
-        usuario_id_mock = 1 
-        
-        pdf_file = service.generar_pdf(data, usuario_id=usuario_id_mock)
-        
-        return send_file(
-            pdf_file,
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=f"reporte_{data.get('tipo', 'general')}.pdf"
-        )
+        datos = informe_service.obtener_datos_informe(data, current_user.id)
+        return jsonify(datos), 200
+    except ValueError as e:
+        return jsonify({"detail": str(e)}), 400
     except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"detail": "Error al generar informe", "error": str(e)}), 500
 # ==========================================
 # 🚀 ARRANQUE
 # ==========================================
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

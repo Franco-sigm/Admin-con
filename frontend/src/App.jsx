@@ -98,7 +98,7 @@ function App() {
                {/* Módulos */}
                <Route path="residentes" element={<ResidentesPage />} />
                <Route path="finanzas" element={<IngresosEgresosPage />} />
-                <Route path="informes" element={<InformesPage />} />
+               <Route path="informes" element={<InformesPage />} /> 
                
               {/* Aquí agregarás más módulos en el futuro (Conserjería, Anuncios, etc.) */}
                

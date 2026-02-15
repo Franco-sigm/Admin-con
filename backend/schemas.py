@@ -108,8 +108,8 @@ class TokenData(BaseModel):
 
 class UsuarioBase(BaseModel):
     nombre: str
-    email: EmailStr # Validación fuerte de email
-    rol: Optional[str] = "CONSERJE" 
+    email: EmailStr 
+
     comunidad_id: Optional[int] = None 
 
 class UsuarioCreate(UsuarioBase):
