@@ -1,53 +1,63 @@
-import bcrypt
 import os
+import jwt
 from datetime import datetime, timedelta
-from jose import jwt, JWTError # Requiere: pip install python-jose
+from typing import Optional
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 
-# ---------------------------------------------------
-# CONFIGURACIÓN
-# ---------------------------------------------------
-# Intenta leer la llave del .env, si no hay, usa una por defecto (Inseguro para prod, cámbialo)
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secreto-cambiar-en-produccion")
+# Importaciones locales
+from database import get_db
+from services import usuario_service
+
+# Configuraciones de seguridad
+SECRET_KEY = os.getenv('SECRET_KEY', 'clave-super-secreta-cambiar-en-env')
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 horas de sesión
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # El token dura 7 días
 
-# ---------------------------------------------------
-# LÓGICA DE CONTRASEÑAS (código aprobado)
-# ---------------------------------------------------
+# Le decimos a FastAPI dónde está la ruta de login para que arme el botón "Authorize" en Swagger
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/usuarios/login")
 
-def verify_password(plain_password, hashed_password):
-    """Verifica si una contraseña plana coincide con el hash"""
-    if isinstance(plain_password, str):
-        plain_password = plain_password.encode('utf-8')
-    if isinstance(hashed_password, str):
-        hashed_password = hashed_password.encode('utf-8')
-    
-    return bcrypt.checkpw(plain_password, hashed_password)
-
-def get_password_hash(password):
-    """Genera un hash seguro para la contraseña"""
-    if isinstance(password, str):
-        password = password.encode('utf-8')
-    
-    hashed = bcrypt.hashpw(password, bcrypt.gensalt())
-    return hashed.decode('utf-8')
-
-
-
-def create_access_token(data: dict):
-    """Crea un token JWT con tiempo de expiración"""
+def crear_token_acceso(data: dict, expires_delta: Optional[timedelta] = None):
+    """Genera el Token JWT cuando el usuario hace login exitosamente."""
     to_encode = data.copy()
-    
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+        
     to_encode.update({"exp": expire})
-    
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def decode_access_token(token: str):
-    """Decodifica y valida el token. Retorna el payload o None si es inválido"""
+def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Esta es la función barrera (Depends). 
+    Se encarga de interceptar el token, abrirlo, ver quién es y dejarlo pasar.
+    """
+    credenciales_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No se pudieron validar las credenciales o el token expiró",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
     try:
+        # Decodificamos el token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        return None
+        
+        # Extraemos el ID que guardamos dentro del token
+        usuario_id: int = payload.get("id")
+        if usuario_id is None:
+            raise credenciales_exception
+            
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="El token ha expirado")
+    except jwt.InvalidTokenError:
+        raise credenciales_exception
+
+    # Buscamos al usuario en la base de datos para confirmar que sigue existiendo
+    usuario = usuario_service.obtener_usuario_por_id(db=db, usuario_id=usuario_id)
+    if not usuario:
+        raise credenciales_exception
+        
+    return usuario

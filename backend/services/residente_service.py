@@ -1,48 +1,30 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from sqlalchemy.orm import Session
-
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 import models
 import schemas
 
-class ResidenteService:
-    def __init__(self, db: Session):
-        self.db = db
+def crear_residente(db: Session, residente: schemas.ResidenteCreate):
+    # Verificamos que el email no esté usado por otra persona en el sistema
+    if residente.email:
+        email_existente = db.query(models.Residente).filter(models.Residente.email == residente.email).first()
+        if email_existente:
+            raise HTTPException(status_code=400, detail="Este email ya está en uso por otro residente.")
 
-    def crear(self, datos: schemas.ResidenteCreate):
-        # Nota: La validación de que la comunidad exista se hace antes o aquí
-        residente_dict = datos.dict()
-        nuevo = models.Residente(**residente_dict)
-        self.db.add(nuevo)
-        self.db.commit()
-        self.db.refresh(nuevo)
-        return nuevo
-
-    def obtener_por_comunidad(self, comunidad_id: int):
-        return self.db.query(models.Residente).filter(models.Residente.comunidad_id == comunidad_id).all()
-
-  
-    def obtener_por_id(self, residente_id: int):
-        return self.db.query(models.Residente).filter(models.Residente.id == residente_id).first()
-
-    def eliminar(self, residente_id: int):
-        residente = self.db.query(models.Residente).filter(models.Residente.id == residente_id).first()
-        if residente:
-            self.db.delete(residente)
-            self.db.commit()
-            return True
-        return False
+    db_residente = models.Residente(**residente.model_dump())
     
-    def actualizar(self, residente_id: int, datos: schemas.ResidenteUpdate):
-        residente = self.db.query(models.Residente).filter(models.Residente.id == residente_id).first()
-        if residente:
-            # exclude_unset=True es perfecto para actualizaciones parciales (PATCH/PUT)
-            for key, value in datos.dict(exclude_unset=True).items():
-                setattr(residente, key, value)
-            self.db.commit()
-            self.db.refresh(residente)
-            return residente
-        return None
+    try:
+        db.add(db_residente)
+        db.commit()
+        db.refresh(db_residente)
+        return db_residente
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Error al crear el residente. Verifica que la propiedad exista.")
+
+def obtener_residentes_por_comunidad(db: Session, comunidad_id: int):
+    # Este es un query avanzado (Join). Buscamos a los residentes, 
+    # pero cruzando la información con la tabla Propiedades para filtrar por comunidad.
+    return db.query(models.Residente).join(models.Propiedad).filter(
+        models.Propiedad.comunidad_id == comunidad_id
+    ).all()

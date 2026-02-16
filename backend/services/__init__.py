@@ -12,8 +12,8 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 # -------------------------
 
-# Ahora importamos los servicios normalmente
-from .usuario_service import UsuarioService
-from .comunidad_service import ComunidadService
-from .residente_service import ResidenteService
-from .transaccion_service import TransaccionService
+from . import usuario_service
+from . import comunidad_service
+from . import propiedad_service
+from . import residente_service
+from . import financiero_service

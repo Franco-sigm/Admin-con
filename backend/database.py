@@ -1,25 +1,24 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
 
 # --------------------------------------------------------------------------
-# CONFIGURACIÓN PARA FLASK
+# CONFIGURACIÓN PARA FASTAPI (Versión Empresarial)
 # --------------------------------------------------------------------------
 
 # 1. URL DE CONEXIÓN
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Validación de seguridad: Si estamos en producción y no hay URL, detenerse.
-# 
 if not SQLALCHEMY_DATABASE_URL:
-    # produccion
     raise ValueError("DATABASE_URL no está configurada en las variables de entorno.")
-# 2. CREAR EL MOTOR (CORREGIDO PARA CPANEL)
+
+# 2. CREAR EL MOTOR 
+# Mantenemos las optimizaciones para MySQL:
 # pool_recycle=280: Evita el error "MySQL server has gone away" reciclando antes de los 5 min.
 # pool_pre_ping=True: Verificar la conexión antes de cada consulta.
 engine = create_engine(
@@ -28,14 +27,20 @@ engine = create_engine(
     pool_pre_ping=True
 )
 
-# 3. SESIÓN
-db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+# 3. SESIÓN LOCAL (El estándar de FastAPI)
+# Eliminamos scoped_session. Ahora creamos una fábrica de sesiones.
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # 4. BASE DECLARATIVA
 Base = declarative_base()
-Base.query = db_session.query_property()
+# Eliminamos Base.query = db_session.query_property() ya que FastAPI inyecta la sesión dinámicamente.
 
-def init_db():
-    # Importamos los modelos dentro de la función para evitar ciclos
-    import models
-    Base.metadata.create_all(bind=engine)
+# 5. INYECCIÓN DE DEPENDENCIAS (¡La magia de FastAPI!)
+# Esta función abre una conexión cuando entra una petición (ej: crear residente) 
+# y se asegura de cerrarla (finally) sin importar si hubo un error o no.
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

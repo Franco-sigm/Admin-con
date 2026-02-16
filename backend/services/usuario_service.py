@@ -1,38 +1,55 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from fastapi import HTTPException
 import models
 import schemas
-import security
+from passlib.context import CryptContext
 
-class UsuarioService:
-    def __init__(self, db: Session):
-        self.db = db
+# Configuración del motor de encriptación
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    def obtener_por_email(self, email: str):
-        return self.db.query(models.Usuario).filter(models.Usuario.email == email).first()
+def get_password_hash(password: str):
+    return pwd_context.hash(password)
 
-    def obtener_por_id(self, user_id: int):
-        return self.db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
+# ==========================================
+# 🔑 NUEVA FUNCIÓN: VERIFICAR CONTRASEÑA
+# ==========================================
+def verificar_password(plain_password: str, hashed_password: str):
+    """
+    Toma la contraseña en texto plano (del login) y verifica si coincide
+    con el hash encriptado guardado en la base de datos.
+    """
+    return pwd_context.verify(plain_password, hashed_password)
 
-    def crear_usuario(self, datos: schemas.UsuarioCreate):
-        # 1. Validar duplicados
-        if self.obtener_por_email(datos.email):
-            raise ValueError("El email ya está registrado")
+def crear_usuario(db: Session, usuario: schemas.UsuarioCreate):
+    # 1. Verificar si el correo ya existe
+    usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == usuario.email).first()
+    if usuario_existente:
+        raise HTTPException(status_code=400, detail="Este email ya está registrado en el sistema.")
 
-        # 2. Hashear password
-        hashed_password = security.get_password_hash(datos.password)
+    # 2. Encriptar la contraseña (¡NUNCA guardar en texto plano!)
+    hashed_password = get_password_hash(usuario.password)
 
-        # 3. Crear usuario
-        nuevo_usuario = models.Usuario(
-            nombre=datos.nombre,
-            email=datos.email,
-            password_hash=hashed_password,
-           
-        )
-        self.db.add(nuevo_usuario)
-        self.db.commit()
-        self.db.refresh(nuevo_usuario)
-        return nuevo_usuario
+    # 3. Crear el usuario en la base de datos
+    db_usuario = models.Usuario(
+        nombre=usuario.nombre,
+        email=usuario.email,
+        password_hash=hashed_password
+    )
+    
+    db.add(db_usuario)
+    db.commit()
+    db.refresh(db_usuario)
+    return db_usuario
+
+def obtener_usuario_por_email(db: Session, email: str):
+    return db.query(models.Usuario).filter(models.Usuario.email == email).first()
+
+# ==========================================
+# 🔍 NUEVA FUNCIÓN: OBTENER POR ID
+# ==========================================
+def obtener_usuario_por_id(db: Session, usuario_id: int):
+    """
+    Esta función es vital para security.py. 
+    Busca al usuario usando el ID que viene dentro del Token JWT.
+    """
+    return db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
