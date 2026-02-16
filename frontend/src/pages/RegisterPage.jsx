@@ -22,12 +22,10 @@ function RegisterPage() {
     try {
       // 2. USAMOS API.POST
       // No ponemos la URL completa. client.js ya sabe si es Localhost o Producción.
-      await api.post('/register', {
+      await api.post('/api/usuarios/', {
          nombre: formData.nombre,
          email: formData.email,
          password: formData.password,
-         // Lógica de negocio: Quien se registra desde fuera es un ADMINISTRADOR
-         rol: 'ADMINISTRADOR', 
          comunidad_id: null 
       });
 

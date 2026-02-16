@@ -14,39 +14,43 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   // 2. FUNCIÓN LOGIN (Optimizada con Axios)
+ // 2. FUNCIÓN LOGIN (Adaptada para FastAPI OAuth2)
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Usamos api.post en lugar de fetch.
-      // No necesitamos poner la URL completa, api.js ya sabe la base.
-      const response = await api.post('/token', {
-        username: email, // El backend espera 'username' (aunque sea el email)
-        password: password
+      // 1. Preparamos los datos como Form Data (Exigencia de FastAPI)
+      const formData = new URLSearchParams();
+      formData.append('username', email); // Tiene que llamarse 'username', no 'email'
+      formData.append('password', password);
+
+      // 2. Apuntamos a la ruta correcta de tu router y forzamos el Content-Type
+      const response = await api.post('/api/usuarios/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       });
 
-      // Si llegamos aquí, es que funcionó (Axios lanza error si falla)
+      // 3. Extraemos el token del JSON de respuesta de FastAPI
       const { access_token } = response.data;
 
-      // Guardamos el token
+      // 4. Guardamos el token para que tu client.js lo inyecte automáticamente después
       localStorage.setItem('token', access_token);
       
-      console.log("Login exitoso, redirigiendo...");
-      navigate('/home'); // O '/dashboard'
+      console.log("¡Login exitoso! Token guardado.");
+      navigate('/home'); 
 
     } catch (error) {
       console.error("Error en login:", error);
       
-      // Manejo inteligente de errores del Backend
       if (error.response) {
-        // El servidor respondió con un error (ej: 401 Credenciales incorrectas)
-        alert(error.response.data.detail || "Error al iniciar sesión");
+        // Mostramos el mensaje exacto que FastAPI nos envía ("Email o contraseña incorrectos")
+        alert(error.response.data.detail || "Error de credenciales");
       } else if (error.request) {
-        // El servidor no respondió (está caído)
-        alert("No se pudo conectar con el servidor. Verifica tu conexión.");
+        alert("El servidor backend parece estar apagado.");
       } else {
-        alert("Ocurrió un error inesperado.");
+        alert("Error procesando la solicitud.");
       }
     } finally {
       setLoading(false);
