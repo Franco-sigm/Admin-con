@@ -8,7 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from routes import usuarios, comunidades, financiero, propiedades, residentes, informes
+from routes import usuarios, comunidades, financiero, propiedades, residentes, informes, cargos
 # Importaciones locales adaptadas a tu nueva arquitectura
 from database import engine, Base, get_db
 import schemas
@@ -30,9 +30,13 @@ app = FastAPI(
 origenes_permitidos = [
     "https://conadmin.cl",
     "https://www.conadmin.cl",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
+    "http://localhost:5173",  # Agregado por seguridad
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
+ 
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,6 +58,7 @@ app.include_router(financiero.router)
 app.include_router(propiedades.router) # Nueva ruta para propiedades
 app.include_router(residentes.router)
 app.include_router(informes.router) # Nueva ruta para informes y reportes
+app.include_router(cargos.router) # Nueva ruta para cargos y gastos comunes 
                    
 # ==========================================
 # 🔒 SISTEMA DE SEGURIDAD (Reemplazo del Decorador)

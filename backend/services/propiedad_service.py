@@ -29,3 +29,16 @@ def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
 def obtener_propiedades_por_comunidad(db: Session, comunidad_id: int):
     # Retorna todas las propiedades de un edificio para mostrarlas en el frontend
     return db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).all()
+
+def eliminar_propiedad(db: Session, propiedad_id: int):
+    propiedad = db.query(models.Propiedad).filter(models.Propiedad.id == propiedad_id).first()
+    
+    if not propiedad:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada.")
+    
+    try:
+        db.delete(propiedad)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="No se puede eliminar esta propiedad porque tiene residentes o deudas asociadas.")

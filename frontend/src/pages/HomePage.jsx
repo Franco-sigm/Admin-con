@@ -57,10 +57,12 @@ function HomePage() {
   const cargarComunidades = async () => {
     try {
       setCargando(true)
-      const res = await client.get('/comunidades')
-      setComunidades(res.data)
+      const res = await client.get('/api/comunidades/')
+      // Blindaje: Nos aseguramos de que siempre se guarde un Array, incluso si la API falla
+      setComunidades(Array.isArray(res.data) ? res.data : [])
     } catch (error) {
-      console.error("Error cargando:", error)
+      console.error("Error cargando comunidades:", error)
+      setComunidades([]) // Si hay error de red, mostramos estado vacío en lugar de explotar
     } finally {
       setCargando(false)
     }
@@ -83,10 +85,10 @@ function HomePage() {
       }
 
       if (idEdicion) {
-         await client.put(`/comunidades/${idEdicion}`, datosAEnviar)
+         await client.put(`/api/comunidades/${idEdicion}`, datosAEnviar)
          alert("✅ Comunidad actualizada")
       } else {
-         await client.post('/comunidades', datosAEnviar)
+         await client.post('/api/comunidades/', datosAEnviar)
          alert("✅ Comunidad creada")
       }
       
@@ -97,7 +99,7 @@ function HomePage() {
 
     } catch (error) {
       console.error("Error al guardar:", error)
-      const msg = error.response?.data?.detail || "Ocurrió un error inesperado";
+      const msg = error.response?.data?.detail || "Ocurrió un error inesperado al guardar";
       alert(`Error: ${msg}`)
     }
   }
@@ -123,7 +125,7 @@ function HomePage() {
     if (!window.confirm("¿Estás seguro? Se borrarán también los residentes y datos asociados.")) return
 
     try {
-      await client.delete(`/comunidades/${id}`)
+      await client.delete(`/api/comunidades/${id}`)
       setComunidades(prev => prev.filter(c => c.id !== id))
       alert("🗑️ Comunidad eliminada")
     } catch (error) {
@@ -154,7 +156,7 @@ function HomePage() {
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
         <div>
            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Mis Condominios</h1>
-           <p className="text-gray-500 mt-1">Comienza creando el espacio de administracion de tu comunidad</p>
+           <p className="text-gray-500 mt-1">Comienza creando el espacio de administración de tu comunidad</p>
         </div>
         <button 
            onClick={abrirModalNuevo}
@@ -169,11 +171,11 @@ function HomePage() {
          <div className="flex justify-center py-20">
              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div>
          </div>
-      ) : comunidades.length === 0 ? (
+      ) : (!Array.isArray(comunidades) || comunidades.length === 0) ? (
         
-        // ESTADO VACÍO (Elegante)
+        // ESTADO VACÍO (Elegante y Blindado)
         <div className="flex flex-col items-center justify-center py-24 bg-gray-50 border border-dashed border-gray-300 rounded-2xl">
-           <Icons.Empty />
+           {Icons.Empty()} 
            <h3 className="text-lg font-semibold text-gray-900 mt-4">No tienes comunidades</h3>
            <p className="text-gray-500 mt-2 text-center max-w-sm text-sm">
              Comienza creando tu primera comunidad para gestionar residentes, finanzas y más.
@@ -308,6 +310,7 @@ function HomePage() {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 outline-none bg-white appearance-none text-gray-800"
                         >
                         <option value="Edificio">Edificio</option>
+                        <option value="Condominio Departamentos">Condominio Departamentos</option>
                         <option value="Condominio Casas">Casas</option>
                         <option value="Oficinas">Oficinas</option>
                         </select>

@@ -13,7 +13,7 @@ router = APIRouter(
     tags=["Administración de Propiedades"]
 )
 
-@router.post("/", response_model=schemas.Propiedad, status_code=201)
+@router.post("", response_model=schemas.Propiedad, status_code=201)
 def crear_propiedad(
     propiedad: schemas.PropiedadCreate, 
     db: Session = Depends(get_db),
@@ -34,3 +34,14 @@ def listar_propiedades(
     Lista todos los departamentos/casas de un condominio.
     """
     return propiedad_service.obtener_propiedades_por_comunidad(db=db, comunidad_id=comunidad_id)
+
+@router.delete("/{propiedad_id}", status_code=204)
+def eliminar_propiedad(
+    propiedad_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual) # 🔒 Ruta protegida
+):
+    """
+    Elimina una propiedad específica por su ID.
+    """
+    propiedad_service.eliminar_propiedad(db=db, propiedad_id=propiedad_id)  

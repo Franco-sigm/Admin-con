@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, Any, List
+from typing import Optional, Any, List, Literal
 from datetime import date, datetime
 from enum import Enum
 
@@ -50,7 +50,9 @@ class Comunidad(ComunidadBase):
 # 2. SCHEMAS DE PROPIEDADES (¡NUEVO!)
 # ==========================================
 class PropiedadBase(BaseModel):
-    numero_unidad: str # Ej: "Depto 402"
+    numero_unidad: str
+    prorrateo: float = 0.0
+    comunidad_id: Optional[int] = None # Esto se asignará al crear la propiedad, no es necesario en el update
 
 class PropiedadCreate(PropiedadBase):
     comunidad_id: int
@@ -71,42 +73,49 @@ class ResidenteBase(BaseModel):
     email: Optional[EmailStr] = None 
     telefono: Optional[str] = None
     es_propietario: EsPropietario = EsPropietario.NO
-    # Eliminamos 'unidad' porque ahora pertenece a Propiedad
-    # Eliminamos 'estado_pago' porque se calculará con los Cargos
 
 class ResidenteCreate(ResidenteBase):
-    propiedad_id: int # Ahora se asocia a la Propiedad, no directo a la Comunidad
+    # ✅ VOLVEMOS a propiedad_id, porque React envía un número entero al crear
+    propiedad_id: Optional[int] = None 
+    
+    # Campos "mágicos" para crear la propiedad al mismo tiempo si no existe
+    numero_unidad: Optional[str] = None
+    prorrateo: Optional[float] = 0.0
+    comunidad_id: Optional[int] = None
 
 class ResidenteUpdate(BaseModel):
     nombre: Optional[str] = None
     email: Optional[EmailStr] = None
     telefono: Optional[str] = None
     es_propietario: Optional[EsPropietario] = None
-
+    
 class Residente(ResidenteBase):
     id: int
-    propiedad_id: int
+    
+    # ❌ ELIMINAMOS propiedad_id: int (ya no existe en la base de datos)
+    
+    # ✅ AGREGAMOS la lista de propiedades (Usamos comillas por si el schema Propiedad está más abajo)
+    propiedades: List["Propiedad"] = []
 
     class Config:
         from_attributes = True
-
-
 # ==========================================
 # 4. SCHEMAS DE CARGOS / DEUDAS (¡NUEVO!)
 # ==========================================
 class CargoBase(BaseModel):
-    monto: int # En Chile usamos enteros (CLP)
+    propiedad_id: int
+    monto: int
     concepto: str
-    fecha_emision: Optional[date] = None # Si no se envía, la BD pone la de hoy
     fecha_vencimiento: date
-    estado: EstadoCargo = EstadoCargo.PENDIENTE
+    # El estado por defecto será PENDIENTE si no se envía
+    estado: Literal['PENDIENTE', 'PARCIAL', 'PAGADO'] = 'PENDIENTE'
 
 class CargoCreate(CargoBase):
-    propiedad_id: int
+    pass
 
 class Cargo(CargoBase):
     id: int
-    propiedad_id: int
+    fecha_emision: date  # La base de datos lo genera, así que lo devolvemos al leer
 
     class Config:
         from_attributes = True
@@ -188,3 +197,5 @@ class Usuario(UsuarioBase):
 
     class Config:
         from_attributes = True
+
+

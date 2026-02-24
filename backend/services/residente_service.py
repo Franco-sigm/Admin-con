@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import models
@@ -23,8 +23,31 @@ def crear_residente(db: Session, residente: schemas.ResidenteCreate):
         raise HTTPException(status_code=400, detail="Error al crear el residente. Verifica que la propiedad exista.")
 
 def obtener_residentes_por_comunidad(db: Session, comunidad_id: int):
-    # Este es un query avanzado (Join). Buscamos a los residentes, 
-    # pero cruzando la información con la tabla Propiedades para filtrar por comunidad.
-    return db.query(models.Residente).join(models.Propiedad).filter(
+  
+    return db.query(models.Residente).join(
+        models.Residente.propiedades # 👈 1. Usamos la relación plural explícita
+    ).filter(
         models.Propiedad.comunidad_id == comunidad_id
+    ).options(
+        joinedload(models.Residente.propiedades) # 👈 2. Obligamos a adjuntar la lista de propiedades al JSON
     ).all()
+
+def eliminar_residente(db: Session, residente_id: int):
+    """
+    Busca un residente por su ID y lo elimina de la base de datos.
+    """
+    # 1. Buscamos al residente
+    db_residente = db.query(models.Residente).filter(models.Residente.id == residente_id).first()
+    
+    # 2. Si no existe, lanzamos un 404 (esto es lo que espera el frontend)
+    if not db_residente:
+        raise HTTPException(status_code=404, detail="Residente no encontrado")
+
+    try:
+        # 3. Lo borramos
+        db.delete(db_residente)
+        db.commit()
+        return {"message": "Residente eliminado correctamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"No se pudo eliminar: {str(e)}")

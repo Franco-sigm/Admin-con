@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Enum, ForeignKey, UniqueConstraint, Float, Table
 from sqlalchemy.orm import relationship
 from database import Base
 from sqlalchemy.sql import func
-import datetime
+from datetime import date, datetime 
 
 # 1. TABLA COMUNIDADES (Sin cambios mayores)
 class Comunidad(Base):
@@ -35,6 +35,14 @@ class Usuario(Base):
     password_hash = Column(String(255)) 
     comunidades_creadas = relationship("Comunidad", back_populates="creador")
 
+# tabla intermediaruia para la relación muchos a muchos entre Residentes y Propiedades 
+
+residente_propiedad = Table(
+    'residente_propiedad',
+    Base.metadata,
+    Column('residente_id', Integer, ForeignKey('residentes.id', ondelete="CASCADE"), primary_key=True),
+    Column('propiedad_id', Integer, ForeignKey('propiedades.id', ondelete="CASCADE"), primary_key=True)
+)
 
 # ==========================================
 # LA NUEVA ARQUITECTURA FINANCIERA Y FÍSICA
@@ -46,15 +54,16 @@ class Propiedad(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"), nullable=False)
-    numero_unidad = Column(String(20), nullable=False) # Ej: "Depto 402"
-    
+    numero_unidad = Column(String(20), nullable=False) 
+    prorrateo = Column(Float, default=0.0, nullable=False) 
     __table_args__ = (
         UniqueConstraint('comunidad_id', 'numero_unidad', name='uq_comunidad_unidad_fisica'),
     )
 
     # Relaciones
     comunidad = relationship("Comunidad", back_populates="propiedades")
-    residentes = relationship("Residente", back_populates="propiedad")
+    residentes = relationship("Residente", secondary=residente_propiedad, back_populates="propiedades")
+    
     cargos = relationship("Cargo", back_populates="propiedad")
     transacciones = relationship("Transaccion", back_populates="propiedad")
 
@@ -63,15 +72,11 @@ class Residente(Base):
     __tablename__ = "residentes"
 
     id = Column(Integer, primary_key=True, index=True)
-    propiedad_id = Column(Integer, ForeignKey("propiedades.id"), nullable=False)
     nombre = Column(String(100))
-    email = Column(String(150), unique=True) # Único en todo el sistema
+    email = Column(String(150), unique=True) 
     telefono = Column(String(20), nullable=True)
-    es_propietario = Column(Enum('SI', 'NO'), default='NO') 
-    # Eliminamos "estado_pago" porque ahora se calculará matemáticamente sumando los Cargos
-
-    # Relación inversa
-    propiedad = relationship("Propiedad", back_populates="residentes")
+    propiedades = relationship("Propiedad", secondary=residente_propiedad, back_populates="residentes")
+    
 
 # 5. TABLA CARGOS (NUEVA: Las Deudas o Cobros emitidos, ej: Gasto Común de Marzo)
 class Cargo(Base):
@@ -81,9 +86,9 @@ class Cargo(Base):
     propiedad_id = Column(Integer, ForeignKey("propiedades.id"), nullable=False)
     monto = Column(Integer, nullable=False) # En Chile usamos enteros para los montos
     concepto = Column(String(100), nullable=False) # Ej: "Gasto Común", "Multa", "Reserva Quincho"
-    fecha_emision = Column(Date, default=datetime.date.today)
+    fecha_emision = Column(Date, default=date.today)
     fecha_vencimiento = Column(Date, nullable=False)
-    estado = Column(Enum('PENDIENTE', 'PARCIAL', 'PAGADO'), default='PENDIENTE')
+    estado = Column(Enum('PENDIENTE', 'PARCIAL', 'PAGADO', 'ANULADO'), default='PENDIENTE')
 
     # Relaciones
     propiedad = relationship("Propiedad", back_populates="cargos")
@@ -99,14 +104,14 @@ class Transaccion(Base):
     tipo = Column(Enum('INGRESO', 'EGRESO'), nullable=False)
     metodo_pago = Column(Enum('TRANSFERENCIA', 'EFECTIVO', 'WEBPAY', 'OTRO'), nullable=False)
     monto_total = Column(Integer, nullable=False)
-    fecha = Column(Date, default=datetime.date.today)
+    fecha = Column(Date, default=date.today)
     comprobante_url = Column(String(255), nullable=True)
     descripcion = Column(String(255), nullable=True)
-
     # Relaciones
     comunidad = relationship("Comunidad", back_populates="transacciones")
     propiedad = relationship("Propiedad", back_populates="transacciones")
     detalles = relationship("DetallePago", back_populates="transaccion")
+    fecha_creacion = Column(DateTime, server_default=func.now())
 
 # 7. TABLA DETALLE DE PAGOS (NUEVA: La Tabla Puente / La Magia)
 # Esta tabla explica CÓMO una Transacción de Ingreso pagó uno o varios Cargos
