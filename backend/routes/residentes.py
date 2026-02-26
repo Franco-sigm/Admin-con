@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -64,17 +64,16 @@ def crear_residente(residente: schemas.ResidenteCreate, db: Session = Depends(ge
     
     return residente_db
 
-@router.get("/comunidad/{comunidad_id}", response_model=List[schemas.Residente])
-def listar_residentes_comunidad(
+@router.get("/comunidad/{comunidad_id}", response_model=schemas.ResidentesPaginados)
+def listar_residentes(
     comunidad_id: int,
-    db: Session = Depends(get_db),
-    usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual) # 🔒 Ruta protegida
+    page: int = 1,
+    limit: int = 15,
+    db: Session = Depends(get_db)
 ):
-    """
-    Devuelve la lista de todos los residentes que pertenecen a un condominio específico.
-    Hace un cruce automático con las propiedades internamente a través del service.
-    """
-    return residente_service.obtener_residentes_por_comunidad(db=db, comunidad_id=comunidad_id)
+    skip = (page - 1) * limit
+    return residente_service.obtener_residentes_por_comunidad(db, comunidad_id, skip, limit)
+
 
 @router.delete("/{residente_id}", status_code=204)
 def eliminar_residente_route(

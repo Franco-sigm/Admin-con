@@ -99,6 +99,12 @@ class Residente(ResidenteBase):
 
     class Config:
         from_attributes = True
+
+class ResidentesPaginados(BaseModel):
+    total: int
+    items: List[Residente]
+
+
 # ==========================================
 # 4. SCHEMAS DE CARGOS / DEUDAS (¡NUEVO!)
 # ==========================================
@@ -152,6 +158,9 @@ class Transaccion(TransaccionBase):
     class Config:
         from_attributes = True
 
+class TransaccionesPaginadas(BaseModel):
+    total: int
+    items: List[Transaccion]
 
 # ==========================================
 # 6. SCHEMAS DE DETALLE DE PAGOS (¡NUEVO!)

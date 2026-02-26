@@ -18,7 +18,7 @@ const IngresosEgresosPage = () => {
   const [anio, setAnio] = useState(fechaActual.getFullYear());
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 20; // Cuántos queremos ver por pantalla
+  const limit = 15; // Cuántos queremos ver por pantalla
 
   // NUEVO: Estado para guardar el balance real que viene del backend
   const [resumenFinanciero, setResumenFinanciero] = useState({

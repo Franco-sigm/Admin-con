@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client'; 
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
 
 function DashboardPage() {
   const { id } = useParams(); // ID de la comunidad
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   
   // Estado para los KPIs
@@ -15,7 +18,7 @@ function DashboardPage() {
     egresos: 0
   });
 
-  // NUEVO: Estado para la lista de morosos en lugar de transacciones crudas
+  // Estado para la lista de morosos
   const [morosos, setMorosos] = useState([]);
 
   useEffect(() => {
@@ -26,18 +29,16 @@ function DashboardPage() {
     try {
       setLoading(true);
 
-      // ¡LA MAGIA DE LA NUEVA ARQUITECTURA!
-      // Le pedimos a FastAPI que haga el trabajo pesado de sumar y cruzar datos en MySQL.
+      // Le pedimos a FastAPI que haga el trabajo pesado de sumar y cruzar datos
       const [resBalance, resMorosos] = await Promise.all([
         api.get(`/api/informes/comunidad/${id}/balance`),
         api.get(`/api/informes/comunidad/${id}/morosos`),
-        // Nota: Los endpoints de residentes/unidades los ajustaremos en la Fase 2
       ]);
 
       const dataBalance = resBalance.data;
       const dataMorosos = resMorosos.data;
 
-      // Actualizamos los KPIs financieros con los datos reales y ya calculados
+      // Actualizamos los KPIs financieros
       setStats(prev => ({
         ...prev,
         balance: dataBalance.balance_actual || 0,
@@ -50,13 +51,21 @@ function DashboardPage() {
 
     } catch (error) {
       console.error("Error cargando dashboard:", error);
-      // Blindaje visual en caso de error
     } finally {
       setLoading(false);
     }
   };
 
   const formatMoney = (amount) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(amount);
+
+  // Preparamos los datos para el gráfico de Recharts (Mes Actual)
+  const dataGrafico = [
+    {
+      name: 'Mes Actual',
+      Ingresos: stats.ingresos,
+      Egresos: stats.egresos,
+    }
+  ];
 
   if (loading) {
     return (
@@ -88,7 +97,7 @@ function DashboardPage() {
       {/* --- TARJETAS SUPERIORES (KPIs) --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Tarjeta 1: Residentes (En espera de Fase 2) */}
+        {/* Tarjeta 1: Residentes */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between opacity-70">
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Residentes</p>
@@ -101,7 +110,7 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* Tarjeta 2: Unidades Ocupadas (En espera de Fase 2) */}
+        {/* Tarjeta 2: Unidades Ocupadas */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between opacity-70">
           <div>
              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Unidades</p>
@@ -114,7 +123,7 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* Tarjeta 3: Ingresos (NUEVO KPI) */}
+        {/* Tarjeta 3: Ingresos */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow">
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ingresos Mes</p>
@@ -146,56 +155,68 @@ function DashboardPage() {
       {/* --- SECCIÓN CENTRAL --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* COLUMNA IZQUIERDA: Resumen Financiero */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center items-center">
+        {/* COLUMNA IZQUIERDA: Resumen Financiero con Recharts */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
           <div className="w-full flex justify-between items-center mb-6">
              <h3 className="text-lg font-bold text-gray-800">Resumen Financiero</h3>
-             <button className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Ver reporte completo</button>
+            <button 
+              onClick={() => navigate(`/comunidad/${id}/reportes`)}
+              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+            >
+              Ver reporte completo &rarr;
+            </button>
           </div>
           
-          <div className="h-64 w-full bg-gray-50 rounded-lg flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-200 gap-4">
-             <div className="flex gap-12">
-                <div className="text-center">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Ingresos</p>
-                    <p className="text-2xl font-bold text-emerald-600">{formatMoney(stats.ingresos)}</p>
-                </div>
-                <div className="w-px bg-gray-300 h-12"></div>
-                <div className="text-center">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Egresos</p>
-                    <p className="text-2xl font-bold text-rose-600">{formatMoney(stats.egresos)}</p>
-                </div>
-             </div>
-             <p className="text-xs mt-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                </svg>
-                Gráfico detallado próximamente
-             </p>
+          <div className="h-72 w-full mt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={dataGrafico}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{fill: '#6b7280', fontSize: 12}}
+                  tickFormatter={(value) => `$${(value / 1000)}k`}
+                />
+                <Tooltip 
+                  formatter={(value) => formatMoney(value)}
+                  cursor={{fill: '#f9fafb'}}
+                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'}}
+                />
+                <Legend iconType="circle" wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
+                <Bar dataKey="Ingresos" fill="#059669" radius={[4, 4, 0, 0]} barSize={40} />
+                <Bar dataKey="Egresos" fill="#e11d48" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: Transformada en "Alerta de Morosos" */}
+        {/* COLUMNA DERECHA: Alerta de Morosos */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden">
-          {/* Fondo rojo tenue de advertencia */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-bl-full -z-0 opacity-50"></div>
           
-          <div className="relative z-10">
+          <div className="relative z-10 h-full flex flex-col">
             <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
               Atención: Morosos
             </h3>
             <p className="text-xs text-gray-500 mb-4">Departamentos con mayor deuda</p>
             
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
               {morosos.length === 0 ? (
-                  <p className="text-emerald-600 text-sm text-center py-6 font-medium bg-emerald-50 rounded-lg border border-emerald-100">
-                    🎉 ¡Al día! No hay deudas pendientes.
-                  </p>
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-emerald-600 text-sm text-center py-6 px-4 font-medium bg-emerald-50 rounded-lg border border-emerald-100 w-full">
+                      🎉 ¡Al día! No hay deudas pendientes registradas en el sistema.
+                    </p>
+                  </div>
               ) : (
                   morosos.map((deudor, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-red-50/50 border border-red-100 rounded-lg hover:bg-red-50 transition-colors">
                           <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">
+                              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs shadow-sm">
                                   #{deudor.numero_unidad}
                               </div>
                               <div>
@@ -214,7 +235,6 @@ function DashboardPage() {
         </div>
 
       </div>
-
     </div>
   )
 }

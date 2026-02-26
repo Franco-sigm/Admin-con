@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 import schemas
 from database import get_db
 from services import financiero_service
@@ -43,14 +43,24 @@ def crear_movimiento_general(
 
 # --- 2. RUTAS DE LECTURA (GET) ---
 
-@router.get("/comunidad/{comunidad_id}/transacciones", response_model=List[schemas.Transaccion])
+@router.get("/comunidad/{comunidad_id}/transacciones", response_model=schemas.TransaccionesPaginadas)
 def obtener_historial_financiero(
     comunidad_id: int,
-    db: Session = Depends(get_db),
-    usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual)
+    mes: int = None,
+    anio: int = None,
+    page: int = 1,
+    limit: int = 15,
+    db: Session = Depends(get_db)
 ):
-    """Trae todos los movimientos (Ingresos y Egresos) para la tabla de React."""
-    return financiero_service.obtener_transacciones_comunidad(db=db, comunidad_id=comunidad_id)
+    skip = (page - 1) * limit
+    return financiero_service.obtener_transacciones_comunidad(
+        db=db, 
+        comunidad_id=comunidad_id, 
+        mes=mes, 
+        anio=anio, 
+        skip=skip, 
+        limit=limit
+    )
 
 @router.get("/comunidad/{comunidad_id}/balance")
 def obtener_resumen_financiero(

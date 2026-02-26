@@ -14,6 +14,7 @@ import IngresosEgresosPage from './pages/IngresosEgresosPage'
 import CargosPage from './pages/CargosPage'
 import InformesPage from './pages/InformesPage'
 import PropiedadesPage from './pages/PropiedadesPage' 
+import ReportesPage from './pages/ReportesPage' 
  
 
 // Componentes Globales
@@ -104,6 +105,8 @@ function App() {
                <Route path="finanzas" element={<IngresosEgresosPage />} />
                 <Route path="cargos" element={<CargosPage />} />
                <Route path="informes" element={<InformesPage />} /> 
+               <Route path="reportes" element={<ReportesPage />} />
+               
                
               {/* Aquí agregarás más módulos en el futuro (Conserjería, Anuncios, etc.) */}
                

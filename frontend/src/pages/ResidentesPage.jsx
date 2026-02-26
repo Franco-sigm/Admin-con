@@ -19,26 +19,33 @@ function ResidentesPage() {
   const [cargando, setCargando] = useState(true)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [formResidente, setFormResidente] = useState(INITIAL_FORM_STATE)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 15; // Cuántos queremos ver por pantalla
+
 
   // --- CARGAR DATOS ---
   useEffect(() => {
     if (id) cargarPropiedadesYResidentes()
-  }, [id])
+  }, [id, page])
 
-  const cargarPropiedadesYResidentes = async () => {
+ const cargarPropiedadesYResidentes = async () => {
     try {
       setCargando(true)
       const token = localStorage.getItem('token')
       const config = { headers: { Authorization: `Bearer ${token}` } }
       
-      const respuesta = await api.get(`/api/residentes/comunidad/${id}`, config)
+      // 🚀 1. Agregamos page y limit a la URL
+      const respuesta = await api.get(`/api/residentes/comunidad/${id}?page=${page}&limit=${limit}`, config)
       console.log("🕵️‍♂️ DATOS DEL BACKEND:", respuesta.data)
 
-      if (Array.isArray(respuesta.data)) {
-          // Usamos flatMap para "desenrollar" a los residentes con múltiples propiedades
-          const datosFormateados = respuesta.data.flatMap(res => {
-              
-              // Si el residente tiene propiedades, creamos una fila por cada una
+      // 🚀 2. Ahora sacamos la lista desde respuesta.data.items
+      const listaResidentes = respuesta.data.items || [];
+      const totalRegistros = respuesta.data.total || 0;
+
+      if (Array.isArray(listaResidentes)) {
+          // Mantenemos tu lógica intacta, pero operando sobre listaResidentes
+          const datosFormateados = listaResidentes.flatMap(res => {
               if (res.propiedades && res.propiedades.length > 0) {
                   return res.propiedades.map(prop => ({
                       id: res.id, 
@@ -51,7 +58,6 @@ function ResidentesPage() {
                       estado_pago: res.estado_pago || 'AL_DIA' 
                   }))
               } else {
-                  // Respaldo por si hay un residente "huérfano" sin propiedad asignada
                   return [{
                       id: res.id, 
                       propiedad_id: null,          
@@ -66,6 +72,9 @@ function ResidentesPage() {
           })
           
           setResidentes(datosFormateados)
+          
+          // 🚀 3. Calculamos el total de páginas
+          setTotalPages(Math.ceil(totalRegistros / limit));
       } else {
           setResidentes([])
       }
@@ -84,21 +93,44 @@ function ResidentesPage() {
 
 
 useEffect(() => {
-  // Buscamos si la unidad escrita ya existe en la lista de residentes/propiedades cargadas
-  if (!formResidente.id && formResidente.numero_unidad) {
-    const coincidencia = residentes.find(
-      r => r.numero_unidad?.toLowerCase() === formResidente.numero_unidad.toLowerCase()
-    );
-    
-    if (coincidencia) {
-      setUnidadExistente(coincidencia);
-      // Seteamos automáticamente el prorrateo de la unidad que ya existe
-      setFormResidente(prev => ({ ...prev, prorrateo: coincidencia.prorrateo }));
-    } else {
-      setUnidadExistente(null);
-    }
-  }
-}, [formResidente.numero_unidad, residentes, formResidente.id]);
+    const verificarUnidad = async () => {
+      if (!formResidente.id && formResidente.numero_unidad) {
+        try {
+          const token = localStorage.getItem('token');
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+          
+          // 1. Buscamos en el backend la lista real de propiedades
+          const respuesta = await api.get(`/api/propiedades/comunidad/${id}`, config);
+          const propiedades = respuesta.data;
+          
+          // 2. Comparamos
+          const coincidencia = propiedades.find(
+            p => p.numero_unidad?.toLowerCase() === formResidente.numero_unidad.toLowerCase()
+          );
+
+          if (coincidencia) {
+            setUnidadExistente(coincidencia);
+            // Autocompletamos el prorrateo
+            setFormResidente(prev => ({ ...prev, prorrateo: coincidencia.prorrateo }));
+          } else {
+            setUnidadExistente(null);
+          }
+        } catch (error) {
+          console.error("Error verificando si la unidad existe:", error);
+        }
+      }
+    };
+
+    // 🕒 TÉCNICA DE DEBOUNCE: Esperamos 500ms después de que el usuario deje de escribir 
+    // para no saturar la base de datos con peticiones inútiles (ej: al escribir "1", luego "10", luego "101")
+    const timeoutId = setTimeout(() => {
+      verificarUnidad();
+    }, 500);
+
+    // Limpiamos el temporizador si el usuario sigue escribiendo
+    return () => clearTimeout(timeoutId);
+
+  }, [formResidente.numero_unidad, id]); // Quitamos 'residentes' de las dependencias
 
   // --- MANEJO DEL FORMULARIO ---
   const handleInputChange = (e) => {
@@ -311,6 +343,29 @@ useEffect(() => {
                 ))}
               </tbody>
             </table>
+            {/* --- INICIO DE BOTONES DE PAGINACIÓN --- */}
+      <div className="flex justify-between items-center mt-6 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+        <button 
+          disabled={page === 1} 
+          onClick={() => setPage(page - 1)}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          &larr; Anterior
+        </button>
+        
+        <span className="text-sm font-medium text-gray-600">
+          Página {page} de {totalPages || 1}
+        </span>
+        
+        <button 
+          disabled={page >= totalPages} 
+          onClick={() => setPage(page + 1)}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Siguiente &rarr;
+        </button>
+      </div>
+      {/* --- FIN DE BOTONES DE PAGINACIÓN --- */}
           </div>
         )}
       </div>

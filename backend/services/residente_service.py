@@ -22,15 +22,32 @@ def crear_residente(db: Session, residente: schemas.ResidenteCreate):
         db.rollback()
         raise HTTPException(status_code=400, detail="Error al crear el residente. Verifica que la propiedad exista.")
 
-def obtener_residentes_por_comunidad(db: Session, comunidad_id: int):
-  
-    return db.query(models.Residente).join(
-        models.Residente.propiedades # 👈 1. Usamos la relación plural explícita
+def obtener_residentes_por_comunidad(
+    db: Session, 
+    comunidad_id: int, 
+    skip: int = 0, 
+    limit: int = 25
+):
+    # 1. Armamos la consulta base (sin ejecutarla todavía)
+    query = db.query(models.Residente).join(
+        models.Residente.propiedades
     ).filter(
         models.Propiedad.comunidad_id == comunidad_id
-    ).options(
-        joinedload(models.Residente.propiedades) # 👈 2. Obligamos a adjuntar la lista de propiedades al JSON
-    ).all()
+    )
+    
+    # 2. Contamos cuántos residentes hay en total en la base de datos para esa comunidad
+    total_registros = query.count()
+    
+    # 3. Aplicamos el joinedload, el corte de la página (offset) y el límite, y ahora sí traemos los datos (.all)
+    residentes = query.options(
+        joinedload(models.Residente.propiedades)
+    ).offset(skip).limit(limit).all()
+
+    # 4. Devolvemos el diccionario mágico que Pydantic y React están esperando
+    return {
+        "total": total_registros,
+        "items": residentes
+    }
 
 def eliminar_residente(db: Session, residente_id: int):
     """
