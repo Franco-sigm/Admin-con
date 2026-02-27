@@ -24,17 +24,21 @@ def crear_propiedad(
     """
     return propiedad_service.crear_propiedad(db=db, propiedad=propiedad)
 
-@router.get("/comunidad/{comunidad_id}", response_model=List[schemas.Propiedad])
+@router.get("/comunidad/{comunidad_id}", response_model=schemas.PropiedadesPaginadas)
 def listar_propiedades(
     comunidad_id: int,
-    db: Session = Depends(get_db),
-    usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual) # 🔒 Ruta protegida
+    page: int = 1,
+    limit: int = 20,
+    db: Session = Depends(get_db)
 ):
     """
-    Lista todos los departamentos/casas de un condominio.
+    Obtiene las propiedades de una comunidad con paginación.
     """
-    return propiedad_service.obtener_propiedades_por_comunidad(db=db, comunidad_id=comunidad_id)
-
+    # Calculamos cuántos registros saltar
+    skip = (page - 1) * limit
+    
+    # Llamamos al servicio
+    return propiedad_service.obtener_propiedades_por_comunidad(db, comunidad_id, skip, limit)
 @router.delete("/{propiedad_id}", status_code=204)
 def eliminar_propiedad(
     propiedad_id: int,

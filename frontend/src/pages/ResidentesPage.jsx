@@ -1,50 +1,50 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom' 
-import api from '../api/client' 
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import api from '../api/client'; 
+import BotonPaginado from '../components/BotonPaginado'; 
+import { Users, Search, Plus, Edit2, Trash2, Home, Mail, Phone, Percent, AlertCircle, X, User } from 'lucide-react';
 
 const INITIAL_FORM_STATE = {
   id: null,
   nombre: '',
-  numero_unidad: '', // Estandarizado
-  prorrateo: '',     // Agregado
+  numero_unidad: '', 
+  prorrateo: '',     
   email: '',
   telefono: '',
   propiedad_id: null
-}
+};
 
 function ResidentesPage() {
-  const { id } = useParams() 
+  const { id } = useParams(); 
   
-  const [residentes, setResidentes] = useState([])
-  const [cargando, setCargando] = useState(true)
-  const [mostrarModal, setMostrarModal] = useState(false)
-  const [formResidente, setFormResidente] = useState(INITIAL_FORM_STATE)
+  const [residentes, setResidentes] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [formResidente, setFormResidente] = useState(INITIAL_FORM_STATE);
+  
+  // Estados de Paginación
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const limit = 15; // Cuántos queremos ver por pantalla
-
+  const [totalItems, setTotalItems] = useState(0); 
+  const limit = 15; 
 
   // --- CARGAR DATOS ---
   useEffect(() => {
-    if (id) cargarPropiedadesYResidentes()
-  }, [id, page])
+    if (id) cargarPropiedadesYResidentes();
+  }, [id, page]);
 
  const cargarPropiedadesYResidentes = async () => {
     try {
-      setCargando(true)
-      const token = localStorage.getItem('token')
-      const config = { headers: { Authorization: `Bearer ${token}` } }
+      setCargando(true);
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
       
-      // 🚀 1. Agregamos page y limit a la URL
-      const respuesta = await api.get(`/api/residentes/comunidad/${id}?page=${page}&limit=${limit}`, config)
-      console.log("🕵️‍♂️ DATOS DEL BACKEND:", respuesta.data)
-
-      // 🚀 2. Ahora sacamos la lista desde respuesta.data.items
+      const respuesta = await api.get(`/api/residentes/comunidad/${id}?page=${page}&limit=${limit}`, config);
+      
       const listaResidentes = respuesta.data.items || [];
       const totalRegistros = respuesta.data.total || 0;
 
       if (Array.isArray(listaResidentes)) {
-          // Mantenemos tu lógica intacta, pero operando sobre listaResidentes
           const datosFormateados = listaResidentes.flatMap(res => {
               if (res.propiedades && res.propiedades.length > 0) {
                   return res.propiedades.map(prop => ({
@@ -56,7 +56,7 @@ function ResidentesPage() {
                       email: res.email || '',
                       telefono: res.telefono || '',
                       estado_pago: res.estado_pago || 'AL_DIA' 
-                  }))
+                  }));
               } else {
                   return [{
                       id: res.id, 
@@ -67,50 +67,46 @@ function ResidentesPage() {
                       email: res.email || '',
                       telefono: res.telefono || '',
                       estado_pago: res.estado_pago || 'AL_DIA' 
-                  }]
+                  }];
               }
-          })
+          });
           
-          setResidentes(datosFormateados)
-          
-          // 🚀 3. Calculamos el total de páginas
+          setResidentes(datosFormateados);
+          setTotalItems(totalRegistros); 
           setTotalPages(Math.ceil(totalRegistros / limit));
       } else {
-          setResidentes([])
+          setResidentes([]);
+          setTotalItems(0);
       }
 
     } catch (error) {
-      console.error("Error cargando la lista:", error)
+      console.error("Error cargando la lista:", error);
       if (error.response?.status === 401 || error.response?.status === 403) {
-          alert("Sesión expirada o sin permisos. Por favor, inicia sesión de nuevo.")
+          alert("Sesión expirada o sin permisos. Por favor, inicia sesión de nuevo.");
       }
     } finally {
-      setCargando(false)
+      setCargando(false);
     }
-  }
+  };
 
   const [unidadExistente, setUnidadExistente] = useState(null);
 
-
-useEffect(() => {
+  useEffect(() => {
     const verificarUnidad = async () => {
       if (!formResidente.id && formResidente.numero_unidad) {
         try {
           const token = localStorage.getItem('token');
           const config = { headers: { Authorization: `Bearer ${token}` } };
           
-          // 1. Buscamos en el backend la lista real de propiedades
           const respuesta = await api.get(`/api/propiedades/comunidad/${id}`, config);
           const propiedades = respuesta.data;
           
-          // 2. Comparamos
           const coincidencia = propiedades.find(
             p => p.numero_unidad?.toLowerCase() === formResidente.numero_unidad.toLowerCase()
           );
 
           if (coincidencia) {
             setUnidadExistente(coincidencia);
-            // Autocompletamos el prorrateo
             setFormResidente(prev => ({ ...prev, prorrateo: coincidencia.prorrateo }));
           } else {
             setUnidadExistente(null);
@@ -121,125 +117,115 @@ useEffect(() => {
       }
     };
 
-    // 🕒 TÉCNICA DE DEBOUNCE: Esperamos 500ms después de que el usuario deje de escribir 
-    // para no saturar la base de datos con peticiones inútiles (ej: al escribir "1", luego "10", luego "101")
     const timeoutId = setTimeout(() => {
       verificarUnidad();
     }, 500);
 
-    // Limpiamos el temporizador si el usuario sigue escribiendo
     return () => clearTimeout(timeoutId);
-
-  }, [formResidente.numero_unidad, id]); // Quitamos 'residentes' de las dependencias
+  }, [formResidente.numero_unidad, id]); 
 
   // --- MANEJO DEL FORMULARIO ---
   const handleInputChange = (e) => {
     setFormResidente({
       ...formResidente,
       [e.target.name]: e.target.value
-    })
-  }
+    });
+  };
 
   const handleEditar = (residente) => {
-    // Cargamos los datos en el modal
     setFormResidente({
       ...residente,
-      prorrateo: residente.prorrateo // Aseguramos que pase el dato para mostrarlo deshabilitado
-    }) 
-    setMostrarModal(true)       
-  }
+      prorrateo: residente.prorrateo 
+    }); 
+    setMostrarModal(true);       
+  };
 
   const cerrarModal = () => {
-    setMostrarModal(false)
-    setFormResidente(INITIAL_FORM_STATE)
-  }
+    setMostrarModal(false);
+    setFormResidente(INITIAL_FORM_STATE);
+  };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  const comunidadIdNum = parseInt(id);
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const handleSubmit = async (e) => {
+   e.preventDefault();
+   const comunidadIdNum = parseInt(id);
+   const token = localStorage.getItem('token');
+   const config = { headers: { Authorization: `Bearer ${token}` } };
 
-  try {
-    if (formResidente.id && formResidente.propiedad_id) {
-      // --- MODO EDICIÓN ---
-      await api.put(`/api/residentes/${formResidente.id}`, {
-        nombre: formResidente.nombre,
-        email: formResidente.email,
-        telefono: formResidente.telefono,
-        propiedad_id: formResidente.propiedad_id
-      }, config);
-      alert("✅ Residente actualizado");
-    } else {
-      // --- MODO CREACIÓN (Lógica Inteligente) ---
-      
-      // 1. Verificar si la propiedad ya existe en esta comunidad
-      const resBusqueda = await api.get(`/api/propiedades/comunidad/${comunidadIdNum}`, config);
-      
-      const propiedadesExistentes = resBusqueda.data;
-      
-      let propiedadDestino = propiedadesExistentes.find(
-        p => p.numero_unidad.toLowerCase() === formResidente.numero_unidad.toLowerCase()
-      );
+   try {
+     if (formResidente.id && formResidente.propiedad_id) {
+       await api.put(`/api/residentes/${formResidente.id}`, {
+         nombre: formResidente.nombre,
+         email: formResidente.email,
+         telefono: formResidente.telefono,
+         propiedad_id: formResidente.propiedad_id
+       }, config);
+       alert("✅ Residente actualizado");
+     } else {
+       const resBusqueda = await api.get(`/api/propiedades/comunidad/${comunidadIdNum}?limit=1000`, config);
+       const propiedadesExistentes = resBusqueda.data.items || (Array.isArray(resBusqueda.data) ? resBusqueda.data : []);
+       
+       let propiedadDestino = propiedadesExistentes.find(
+         p => p.numero_unidad.toLowerCase() === formResidente.numero_unidad.toLowerCase()
+       );
 
-      let propiedadIdFinal;
+       let propiedadIdFinal;
 
-      if (propiedadDestino) {
-        // La propiedad ya existe, usamos su ID
-        propiedadIdFinal = propiedadDestino.id;
-        console.log("Usando propiedad existente ID:", propiedadIdFinal);
-      } else {
-        // La propiedad NO existe, la creamos
-        const resNuevaProp = await api.post(`/api/propiedades`, {
-          numero_unidad: formResidente.numero_unidad,
-          prorrateo: parseFloat(formResidente.prorrateo) || 0,
-          comunidad_id: comunidadIdNum
-        }, config);
-        propiedadIdFinal = resNuevaProp.data.id;
-        console.log("Nueva propiedad creada ID:", propiedadIdFinal);
-      }
+       if (propiedadDestino) {
+         propiedadIdFinal = propiedadDestino.id;
+       } else {
+         const resNuevaProp = await api.post(`/api/propiedades`, {
+           numero_unidad: formResidente.numero_unidad,
+           prorrateo: parseFloat(formResidente.prorrateo) || 0,
+           comunidad_id: comunidadIdNum
+         }, config);
+         propiedadIdFinal = resNuevaProp.data.id;
+       }
 
-      // 2. Crear al residente vinculado a la propiedad (sea nueva o vieja)
-      await api.post(`/api/residentes`, {
-        nombre: formResidente.nombre,
-        email: formResidente.email,
-        telefono: formResidente.telefono,
-        propiedad_id: propiedadIdFinal
-      }, config);
-      
-      alert("✅ Residente registrado correctamente");
-    }
-    
-    cerrarModal();
-    cargarPropiedadesYResidentes();
-    
-  } catch (error) {
-    console.error("❌ Error en el proceso:", error);
-    const msg = error.response?.data?.detail || "Error al procesar el registro.";
-    alert(`Hubo un error: ${msg}`);
-  }
-};
+       await api.post(`/api/residentes`, {
+         nombre: formResidente.nombre,
+         email: formResidente.email,
+         telefono: formResidente.telefono,
+         propiedad_id: propiedadIdFinal
+       }, config);
+       
+       alert("✅ Residente registrado correctamente");
+     }
+     
+     cerrarModal();
+     cargarPropiedadesYResidentes();
+     
+   } catch (error) {
+     console.error("❌ Error en el proceso:", error);
+     const msg = error.response?.data?.detail || "Error al procesar el registro.";
+     alert(`Hubo un error: ${msg}`);
+   }
+  };
+
   const handleEliminar = async (residenteId, propiedadId) => {
-    if (!window.confirm("¿Eliminar residente y liberar la unidad?")) return;
+    if (!window.confirm("¿Eliminar residente y liberar la unidad? Esta acción es irreversible.")) return;
 
-    const token = localStorage.getItem('token')
-    const config = { headers: { Authorization: `Bearer ${token}` } }
+    const token = localStorage.getItem('token');
+    const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
       if(residenteId) {
-          await api.delete(`/api/residentes/${residenteId}`, config)
-          alert("🗑️ Residente eliminado. La unidad ahora está vacía.")
+          await api.delete(`/api/residentes/${residenteId}`, config);
+          alert("Residente eliminado. La unidad ahora está vacía.");
       } else {
-          await api.delete(`/api/propiedades/${propiedadId}`, config)
-          alert("🗑️ Unidad física eliminada.")
+          await api.delete(`/api/propiedades/${propiedadId}`, config);
+          alert("Unidad física eliminada.");
       }
       
-      cargarPropiedadesYResidentes()
+      if (residentes.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        cargarPropiedadesYResidentes();
+      }
     } catch (error) {
-      console.error("❌ Error eliminando:", error)
-      alert("No se pudo eliminar.")
+      console.error("❌ Error eliminando:", error);
+      alert("No se pudo eliminar.");
     }
-  }
+  };
 
   const [busqueda, setBusqueda] = useState('');
 
@@ -251,225 +237,264 @@ useEffect(() => {
   });
 
   return (
-    <div className="mt-2 relative p-4 animate-fade-in-down">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
+      
+      {/* --- ENCABEZADO --- */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
-            <h2 className="text-2xl font-bold text-gray-800">Padrón de Residentes</h2>
-            <p className="text-gray-500 text-sm">Gestiona los propietarios de la comunidad</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl border border-indigo-100 shadow-sm">
+                <Users className="w-7 h-7 text-indigo-600" />
+            </div>
+            Padrón de Residentes
+          </h1>
+          <p className="text-gray-500 text-sm mt-2">Gestiona propietarios, unidades y su información de contacto.</p>
         </div>
+      </div>
 
+      {/* --- BARRA DE HERRAMIENTAS (Toolbar Premium) --- */}
+      <div className="bg-gradient-to-b from-white to-gray-50/80 p-5 rounded-2xl border border-gray-200/80 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] shadow-[inset_0_1px_0_rgba(255,255,255,1)] flex flex-col md:flex-row items-center gap-4 justify-between transition-all duration-300 hover:shadow-[0_12px_20px_-8px_rgba(16,24,40,0.12)]">
+        
         {/* BARRA DE BÚSQUEDA UI */}
-        <div className="relative w-full md:w-64">
+        <div className="relative w-full md:w-80 group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+             <Search className="h-4 w-4 text-gray-400 group-hover:text-indigo-500 transition-colors" />
           </div>
-          
           <input
             type="text"
             placeholder="Buscar por nombre o unidad..."
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+            className="pl-9 pr-4 py-2.5 w-full bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:border-gray-300 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
         </div>
+
         <button 
           onClick={() => { 
             setFormResidente(INITIAL_FORM_STATE); 
             setMostrarModal(true); 
           }}
-          className="bg-[oklch(50%_0.134_242.749)] hover:bg-black text-white font-semibold py-2 px-4 rounded-lg shadow-md transition flex items-center gap-2"
+          className="w-full md:w-auto bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl shadow-md shadow-gray-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium active:scale-95 whitespace-nowrap"
         >
-          <span>+</span> Nuevo Residente
+          <Plus className="w-4 h-4" />
+          Nuevo Residente
         </button>
       </div>
 
-      {/* TABLA */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* --- TABLA PRINCIPAL --- */}
+      <div className="bg-gradient-to-b from-white to-gray-50/80 rounded-2xl border border-gray-200/80 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] shadow-[inset_0_1px_0_rgba(255,255,255,1)] overflow-hidden flex flex-col">
         {cargando ? (
-          <div className="p-12 flex flex-col items-center justify-center text-gray-400">
-             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-2"></div>
-             <p>Cargando datos...</p>
+          <div className="p-16 flex flex-col items-center justify-center text-gray-400">
+             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-3"></div>
+             <p className="text-sm font-medium animate-pulse">Cargando padrón...</p>
           </div>
         ) : residentes.length === 0 ? (
-           <div className="p-12 text-center text-gray-400">
-             <p className="text-4xl mb-2">📂</p>
-             <p>Aún no hay residentes registrados.</p>
+           <div className="border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 p-16 m-6 flex flex-col items-center justify-center text-center">
+             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 mb-4">
+                 <Users className="w-7 h-7 text-gray-300" />
+             </div>
+             <h3 className="text-lg font-bold text-gray-900 mb-1">Sin residentes</h3>
+             <p className="text-sm text-gray-500 max-w-sm">No hay residentes registrados. Haz clic en "Nuevo Residente" para empezar.</p>
            </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full leading-normal">
-              <thead>
-                <tr>
-                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unidad</th>
-                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Contacto</th>
-                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-5 py-3 border-b border-gray-200 bg-gray-50 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {residentesFiltrados.map((res) => (
-                  <tr key={res.propiedad_id} className="hover:bg-gray-50 transition">
-                    <td className="px-5 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-700">Depto {res.numero_unidad}</div>
-                        <div className="text-xs text-gray-400 font-mono">Coef: {res.prorrateo}</div>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
-                        {res.nombre}
-                        {!res.id && <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Vacío</span>}
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-col">
-                            <span>{res.email || '-'}</span>
-                            <span className="text-xs text-gray-400">{res.telefono}</span>
-                        </div>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${res.estado_pago === 'MOROSO' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'}`}>
-                        {res.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 whitespace-nowrap text-sm text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => handleEditar(res)} className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg transition" title="Editar Residente">✏️</button>
-                        <button onClick={() => handleEliminar(res.id, res.propiedad_id)} className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition" title="Eliminar">🗑️</button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50/80 text-gray-400 text-[11px] uppercase tracking-widest border-b border-gray-200/80">
+                  <tr>
+                    <th className="p-4 font-semibold">Unidad</th>
+                    <th className="p-4 font-semibold">Nombre</th>
+                    <th className="p-4 font-semibold">Contacto</th>
+                    <th className="p-4 font-semibold">Estado de Pago</th>
+                    <th className="p-4 font-semibold text-center">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* --- INICIO DE BOTONES DE PAGINACIÓN --- */}
-      <div className="flex justify-between items-center mt-6 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-        <button 
-          disabled={page === 1} 
-          onClick={() => setPage(page - 1)}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          &larr; Anterior
-        </button>
-        
-        <span className="text-sm font-medium text-gray-600">
-          Página {page} de {totalPages || 1}
-        </span>
-        
-        <button 
-          disabled={page >= totalPages} 
-          onClick={() => setPage(page + 1)}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Siguiente &rarr;
-        </button>
-      </div>
-      {/* --- FIN DE BOTONES DE PAGINACIÓN --- */}
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100/80 bg-white">
+                  {residentesFiltrados.map((res) => (
+                    <tr key={res.propiedad_id} className="hover:bg-gray-50/80 transition-colors group">
+                      
+                      <td className="p-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                             <Home className="w-4 h-4 text-gray-400" />
+                             Unidad {res.numero_unidad}
+                          </div>
+                          <div className="text-[11px] text-gray-400 font-mono mt-0.5 ml-6">Coef: {res.prorrateo}</div>
+                      </td>
+                      
+                      <td className="p-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                          <div className="flex items-center gap-2">
+                             <span className="text-gray-900 font-bold">{res.nombre}</span>
+                             {!res.id && (
+                               <span className="px-2 py-0.5 text-[10px] bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-md uppercase tracking-widest shadow-sm">Vacío</span>
+                             )}
+                          </div>
+                      </td>
+                      
+                      <td className="p-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-col gap-1">
+                              {res.email ? (
+                                <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 opacity-70" /> {res.email}</div>
+                              ) : <span className="text-gray-300">-</span>}
+                              
+                              {res.telefono && (
+                                <div className="flex items-center gap-1.5 text-xs text-gray-400"><Phone className="w-3.5 h-3.5 opacity-70" /> {res.telefono}</div>
+                              )}
+                          </div>
+                      </td>
+                      
+                      <td className="p-4 whitespace-nowrap text-sm">
+                        <span className={`inline-block px-2.5 py-1 text-[10px] rounded-md font-bold uppercase tracking-widest border shadow-[inset_0_1px_0_rgba(255,255,255,1)] 
+                          ${res.estado_pago === 'MOROSO' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                          {res.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
+                        </span>
+                      </td>
+                      
+                      <td className="p-4 text-center">
+                        <div className="flex justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditar(res)} className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-all" title="Editar Residente">
+                             <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleEliminar(res.id, res.propiedad_id)} className="text-gray-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-all" title="Eliminar/Liberar Unidad">
+                             <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                      
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+             
+            {/* PAGINACIÓN */}
+            {totalItems > 0 && (
+              <div className="px-6 py-2 bg-gray-50 border-t border-gray-200/80">
+                <BotonPaginado
+                  page={page} 
+                  setPage={setPage} 
+                  totalPages={totalPages} 
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
-
-      {/* MODAL (formulario de ingreso de residentes) */}
+     
+      {/* --- MODAL PREMIUM --- */}
       {mostrarModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={cerrarModal}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-down" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                 <h3 className="text-lg font-bold text-gray-800">{formResidente.id ? 'Editar Residente' : 'Nueva Unidad y Residente'}</h3>
-                 <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-600">✕</button>
+        <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-100 transition-transform" onClick={(e) => e.stopPropagation()}>
+            
+            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/80 flex justify-between items-center">
+                 <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    {formResidente.id ? 'Editar Residente' : 'Nueva Unidad y Residente'}
+                 </h2>
+                 <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-700 transition-colors p-1"><X className="w-5 h-5"/></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               
-              {/* Solo mostramos los campos habilitados si es nuevo */}
-              {!formResidente.id && (
-                  <div className="space-y-2">
+              {/* Sección Unidad */}
+              {!formResidente.id ? (
+                  <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-gray-700 text-xs font-bold mb-1">Unidad (Depto/Casa)</label>
-                        <input 
-                          type="text" 
-                          name="numero_unidad" 
-                          value={formResidente.numero_unidad} 
-                          onChange={handleInputChange} 
-                          placeholder="Ej: 101" 
-                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-colors ${
-                            unidadExistente ? 'border-blue-400 bg-blue-50' : 'border-gray-300 focus:ring-indigo-500'
-                          }`} 
-                          required 
-                        />
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Unidad (Depto)</label>
+                        <div className="relative">
+                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Home className="h-4 w-4 text-gray-400" /></div>
+                           <input 
+                             type="text" name="numero_unidad" value={formResidente.numero_unidad} onChange={handleInputChange} 
+                             placeholder="Ej: 101" required 
+                             className={`w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all ${
+                               unidadExistente ? 'border-blue-300 ring-2 ring-blue-500/20 bg-blue-50/50' : 'border-gray-200 focus:border-indigo-500'
+                             }`} 
+                           />
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-gray-700 text-xs font-bold mb-1">Prorrateo (Decimal)</label>
-                        <input 
-                          type="number" 
-                          step="0.000001"
-                          name="prorrateo" 
-                          value={formResidente.prorrateo} 
-                          onChange={handleInputChange} 
-                          placeholder="Ej: 0.025" 
-                          disabled={!!unidadExistente} // Se bloquea si la unidad ya existe
-                          className={`w-full px-4 py-2 border rounded-lg outline-none transition-colors ${
-                            unidadExistente ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'border-gray-300 focus:ring-indigo-500'
-                          }`} 
-                          required 
-                        />
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Prorrateo</label>
+                        <div className="relative">
+                           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Percent className="h-4 w-4 text-gray-400" /></div>
+                           <input 
+                             type="number" step="0.000001" name="prorrateo" value={formResidente.prorrateo} onChange={handleInputChange} 
+                             placeholder="0.025" required disabled={!!unidadExistente}
+                             className={`w-full pl-10 pr-4 py-2.5 font-mono border rounded-xl text-sm font-bold outline-none transition-all ${
+                               unidadExistente ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-gray-50/50 text-gray-900 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'
+                             }`} 
+                           />
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Mensaje de aviso inteligente */}
+                    {/* Mensaje inteligente */}
                     {unidadExistente && (
-                      <div className="flex items-center gap-2 text-blue-600 text-[10px] bg-blue-50 p-2 rounded-lg border border-blue-100 animate-pulse">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Esta unidad ya existe. Se vinculará el residente y se mantendrá el prorrateo actual.</span>
+                      <div className="flex items-start gap-2 text-blue-700 bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm animate-fade-in">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <p className="font-bold mb-0.5">Esta unidad ya existe en el sistema.</p>
+                          <p className="opacity-80">El nuevo residente se vinculará a ella automáticamente y se mantendrá el prorrateo actual de la propiedad.</p>
+                        </div>
                       </div>
                     )}
                   </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Unidad</label>
+                      <input type="text" value={formResidente.numero_unidad} disabled className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 cursor-not-allowed" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Prorrateo</label>
+                      <input type="text" value={formResidente.prorrateo} disabled className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm font-mono font-bold text-gray-500 cursor-not-allowed" />
+                    </div>
+                  </div>
                 )}
 
-              {/* Si estamos editando, mostramos la unidad y el prorrateo bloqueados */}
-              {formResidente.id && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-gray-700 text-xs font-bold mb-1">Unidad</label>
-                      <input type="text" value={formResidente.numero_unidad} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100 cursor-not-allowed text-gray-500 font-medium" />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 text-xs font-bold mb-1">Prorrateo</label>
-                      <input type="text" value={formResidente.prorrateo} disabled className="w-full px-4 py-2 border rounded-lg bg-gray-100 cursor-not-allowed text-gray-500 font-mono" />
-                    </div>
-                  </div>
-              )}
-
-              <div>
-                <label className="block text-gray-700 text-xs font-bold mb-1">Nombre Completo del Residente</label>
-                <input type="text" name="nombre" value={formResidente.nombre} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required />
+              {/* Datos de la Persona */}
+              <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nombre del Residente</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><User className="h-4 w-4 text-gray-400" /></div>
+                    <input type="text" name="nombre" value={formResidente.nombre} onChange={handleInputChange} required 
+                           className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 text-xs font-bold mb-1">Email</label>
-                    <input type="email" name="email" value={formResidente.email} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Email</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Mail className="h-4 w-4 text-gray-400" /></div>
+                        <input type="email" name="email" value={formResidente.email} onChange={handleInputChange} required 
+                               className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-gray-700 text-xs font-bold mb-1">Teléfono</label>
-                    <input type="text" name="telefono" value={formResidente.telefono} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Teléfono</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone className="h-4 w-4 text-gray-400" /></div>
+                        <input type="text" name="telefono" value={formResidente.telefono} onChange={handleInputChange} 
+                               className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                    </div>
                   </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <button type="button" onClick={cerrarModal} className="px-4 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-50 transition">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-[oklch(50%_0.134_242.749)] text-white rounded-lg font-bold hover:shadow-lg transition">
-                  {formResidente.id ? 'Guardar Cambios' : 'Crear Registro'}
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={cerrarModal} className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+                   Cancelar
+                </button>
+                <button type="submit" className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-gray-800 shadow-md shadow-gray-900/20 transition-all active:scale-95">
+                  {formResidente.id ? 'Guardar Cambios' : 'Registrar Residente'}
                 </button>
               </div>
+
             </form>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default ResidentesPage
+export default ResidentesPage;

@@ -107,6 +107,8 @@ class Transaccion(Base):
     fecha = Column(Date, default=date.today)
     comprobante_url = Column(String(255), nullable=True)
     descripcion = Column(String(255), nullable=True)
+    categoria = Column(String(100), nullable=True, default="Otros") 
+    
     # Relaciones
     comunidad = relationship("Comunidad", back_populates="transacciones")
     propiedad = relationship("Propiedad", back_populates="transacciones")

@@ -26,9 +26,20 @@ def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
         db.rollback()
         raise HTTPException(status_code=400, detail="Error de integridad en la base de datos.")
 
-def obtener_propiedades_por_comunidad(db: Session, comunidad_id: int):
-    # Retorna todas las propiedades de un edificio para mostrarlas en el frontend
-    return db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).all()
+def obtener_propiedades_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 20):
+    # 1. Contamos el total real de propiedades en esa comunidad
+    total = db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).count()
+    
+    # 2. Traemos solo el "pedacito" de la página actual
+    propiedades = db.query(models.Propiedad).filter(
+        models.Propiedad.comunidad_id == comunidad_id
+    ).offset(skip).limit(limit).all()
+    
+    # 3. Devolvemos el diccionario con la estructura exacta que pide el esquema
+    return {
+        "total": total,
+        "items": propiedades
+    }
 
 def eliminar_propiedad(db: Session, propiedad_id: int):
     propiedad = db.query(models.Propiedad).filter(models.Propiedad.id == propiedad_id).first()

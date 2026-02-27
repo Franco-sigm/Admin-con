@@ -52,7 +52,8 @@ def crear_transaccion_general(db: Session, transaccion: schemas.TransaccionCreat
         fecha=transaccion.fecha or datetime.now(),
         comunidad_id=transaccion.comunidad_id,
         propiedad_id=transaccion.propiedad_id,
-        comprobante_url=transaccion.comprobante_url
+        comprobante_url=transaccion.comprobante_url,
+        categoria=transaccion.categoria 
     )
     db.add(nueva_transaccion)
     db.commit()

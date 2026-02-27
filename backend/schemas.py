@@ -64,6 +64,10 @@ class Propiedad(PropiedadBase):
     class Config:
         from_attributes = True
 
+class PropiedadesPaginadas(BaseModel):
+    total: int
+    items: List[Propiedad]
+
 
 # ==========================================
 # 3. SCHEMAS DE RESIDENTES (Actualizado)
@@ -136,6 +140,7 @@ class TransaccionBase(BaseModel):
     monto_total: int
     fecha: Optional[date] = None
     descripcion: Optional[str] = None
+    categoria: Optional[str] = "Otros"
     comprobante_url: Optional[str] = None
 
 class TransaccionCreate(TransaccionBase):

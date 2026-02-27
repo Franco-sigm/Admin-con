@@ -1,71 +1,100 @@
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 import models
-from typing import List
+from sqlalchemy import func
 
-def obtener_morosos_por_comunidad(db: Session, comunidad_id: int):
-    """
-    Busca todas las propiedades de una comunidad, suma sus cargos PENDIENTES o PARCIALES,
-    pero RESTANDO los abonos (pagos) que ya hayan realizado.
-    """
-    # 1. Traemos todas las propiedades de esta comunidad
-    propiedades = db.query(models.Propiedad).filter(
-        models.Propiedad.comunidad_id == comunidad_id
+def obtener_datos_reportes(db: Session, comunidad_id: int):
+    # 1. Definimos las fechas
+    hoy = datetime.now()
+    # Retrocedemos unos 180 días (6 meses aprox) para el historial
+    fecha_inicio = hoy - timedelta(days=180)
+    mes_actual_num = hoy.month
+    anio_actual = hoy.year
+
+    # Diccionario para traducir los meses al español
+    nombres_meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+
+    # 2. Traemos TODAS las transacciones de los últimos 6 meses de un solo golpe
+    transacciones = db.query(models.Transaccion).filter(
+        models.Transaccion.comunidad_id == comunidad_id,
+        models.Transaccion.fecha >= fecha_inicio
     ).all()
 
-    morosos = []
+    # --- LÓGICA DEL GRÁFICO DE BARRAS (Historial) ---
+    historial_dict = {}
+    
+    # --- LÓGICA DEL GRÁFICO DE TORTA (Desglose del mes actual) ---
+    desglose_dict = {}
 
+    for t in transacciones:
+        # Obtenemos el nombre corto del mes (Ej: "Oct")
+        nombre_mes = nombres_meses[t.fecha.month - 1]
+        llave_mes = f"{t.fecha.year}-{t.fecha.month:02d}" # Ej: "2026-02" para ordenar correctamente
+
+        # 3A. Llenamos el historial
+        if llave_mes not in historial_dict:
+            historial_dict[llave_mes] = {"mes": nombre_mes, "ingresos": 0, "egresos": 0, "orden": llave_mes}
+        
+        if t.tipo.upper() == "INGRESO":
+            historial_dict[llave_mes]["ingresos"] += float(t.monto_total)
+        elif t.tipo.upper() == "EGRESO":
+            historial_dict[llave_mes]["egresos"] += float(t.monto_total)
+
+            # 3B. Si es un egreso y es del mes actual, lo sumamos a la torta de categorías
+            if t.fecha.month == mes_actual_num and t.fecha.year == anio_actual:
+                # Si no tienes un campo "categoria", puedes usar "descripcion"
+                categoria = t.categoria if hasattr(t, 'categoria') and t.categoria else "Otros"
+                
+                if categoria not in desglose_dict:
+                    desglose_dict[categoria] = 0
+                desglose_dict[categoria] += float(t.monto_total)
+
+    # 4. Ordenamos el historial cronológicamente y le quitamos la llave de ordenamiento
+    historial_lista = sorted(historial_dict.values(), key=lambda x: x["orden"])
+    for item in historial_lista:
+        del item["orden"] # Limpiamos la basura, a React no le sirve esto
+
+    # 5. Formateamos el desglose para el PieChart de Recharts {name: "Luz", value: 100}
+    desglose_lista = [{"name": cat, "value": total} for cat, total in desglose_dict.items()]
+
+    return {
+        "historial": historial_lista,
+        "desglose": desglose_lista
+    }
+
+def obtener_morosos_por_comunidad(db: Session, comunidad_id: int):
+    # Traemos todas las propiedades de la comunidad
+    propiedades = db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).all()
+    
+    morosos = []
     for prop in propiedades:
-        deuda_total_propiedad = 0
-        
-        # 2. Buscamos las deudas que no estén totalmente pagadas
-        cargos_pendientes = db.query(models.Cargo).filter(
+        # Sumamos todos los cargos pendientes de esta propiedad
+        deuda_total = db.query(models.Cargo).filter(
             models.Cargo.propiedad_id == prop.id,
-            models.Cargo.estado.in_(["PENDIENTE", "PARCIAL"])
-        ).all()
+            models.Cargo.estado != 'PAGADO'  # Solo consideramos los cargos que no están pagados
+        ).with_entities(func.sum(models.Cargo.monto)).scalar() or 0
         
-        for cargo in cargos_pendientes:
-            # 3. LA MAGIA: Sumamos cuánto ha abonado históricamente a esta factura
-            pagado = db.query(func.sum(models.DetallePago.monto_abonado)).filter(
-                models.DetallePago.cargo_id == cargo.id
-            ).scalar() or 0
-            
-            # 4. Calculamos el saldo real al vuelo
-            saldo_real = cargo.monto - pagado
-            deuda_total_propiedad += saldo_real
-            
-        # 5. Si después de los cálculos el depto sigue debiendo, entra a la lista
-        if deuda_total_propiedad > 0:
+        if deuda_total > 0:
             morosos.append({
                 "numero_unidad": prop.numero_unidad,
-                "deuda_total": float(deuda_total_propiedad)
+                "deuda_total": deuda_total
             })
-            
-    # 6. Ordenamos la lista de mayor a menor deuda (Para el Top 5 del Dashboard)
-    morosos.sort(key=lambda x: x["deuda_total"], reverse=True)
     
     return morosos
 
 def obtener_balance_comunidad(db: Session, comunidad_id: int):
-    """
-    Calcula el dinero total que ha entrado (INGRESOS) y salido (EGRESOS)
-    de una comunidad específica.
-    """
-    ingresos = db.query(func.sum(models.Transaccion.monto_total)).filter(
+    ingresos = db.query(models.Transaccion).filter(
         models.Transaccion.comunidad_id == comunidad_id,
         models.Transaccion.tipo == "INGRESO"
-    ).scalar() or 0.0
+    ).with_entities(func.sum(models.Transaccion.monto_total)).scalar() or 0
 
-    egresos = db.query(func.sum(models.Transaccion.monto_total)).filter(
+    egresos = db.query(models.Transaccion).filter(
         models.Transaccion.comunidad_id == comunidad_id,
         models.Transaccion.tipo == "EGRESO"
-    ).scalar() or 0.0
-
-    balance_actual = float(ingresos) - float(egresos)
+    ).with_entities(func.sum(models.Transaccion.monto_total)).scalar() or 0
 
     return {
-        "comunidad_id": comunidad_id,
-        "ingresos": float(ingresos),       # 👈 Arreglado para coincidir con tu React
-        "egresos": float(egresos),         # 👈 Arreglado para coincidir con tu React
-        "balance_actual": balance_actual
+        "ingresos": float(ingresos),
+        "egresos": float(egresos),
+        "balance": float(ingresos) - float(egresos)
     }
