@@ -100,12 +100,18 @@ class Transaccion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     comunidad_id = Column(Integer, ForeignKey("comunidades.id"), nullable=False)
-    propiedad_id = Column(Integer, ForeignKey("propiedades.id"), nullable=True) # Null si es un Egreso (pago a proveedor)
+    propiedad_id = Column(Integer, ForeignKey("propiedades.id"), nullable=True) # Null si es un Egreso
+    
     tipo = Column(Enum('INGRESO', 'EGRESO'), nullable=False)
     metodo_pago = Column(Enum('TRANSFERENCIA', 'EFECTIVO', 'WEBPAY', 'OTRO'), nullable=False)
     monto_total = Column(Integer, nullable=False)
     fecha = Column(Date, default=date.today)
-    comprobante_url = Column(String(255), nullable=True)
+    
+    # --- COMPROBANTES (Cloudinary) ---
+    # Usamos 500 porque las URLs de la nube a veces son largas
+    comprobante_url = Column(String(500), nullable=True) 
+    comprobante_public_id = Column(String(255), nullable=True)
+    
     descripcion = Column(String(255), nullable=True)
     categoria = Column(String(100), nullable=True, default="Otros") 
     
@@ -113,8 +119,8 @@ class Transaccion(Base):
     comunidad = relationship("Comunidad", back_populates="transacciones")
     propiedad = relationship("Propiedad", back_populates="transacciones")
     detalles = relationship("DetallePago", back_populates="transaccion")
+    
     fecha_creacion = Column(DateTime, server_default=func.now())
-
 # 7. TABLA DETALLE DE PAGOS (NUEVA: La Tabla Puente / La Magia)
 # Esta tabla explica CÓMO una Transacción de Ingreso pagó uno o varios Cargos
 class DetallePago(Base):

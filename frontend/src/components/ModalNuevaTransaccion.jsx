@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { 
   DollarSign, Home, CreditCard, Tag, Calendar, AlignLeft, 
-  TrendingUp, TrendingDown, X, AlertCircle, CheckCircle2 
+  TrendingUp, TrendingDown, X, AlertCircle, CheckCircle2,
+  Upload, FileText, Paperclip
 } from 'lucide-react';
 
 const CATEGORIAS_INGRESO = ['Pago Gastos Comunes', 'Pago Multas', 'Arriendo Quincho/Sala', 'Otros Ingresos'];
@@ -24,15 +25,19 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
     fecha: new Date().toISOString().split('T')[0]
   });
 
+  const [archivo, setArchivo] = useState(null); // 👈 NUEVO: Estado para el binario del archivo
+  const [previewName, setPreviewName] = useState(""); // 👈 NUEVO: Para mostrar el nombre del archivo seleccionado
   const [residentes, setResidentes] = useState([]);
   const [deudaPendiente, setDeudaPendiente] = useState(null);
   const [cargandoDeuda, setCargandoDeuda] = useState(false);
   const [mantenerAbierto, setMantenerAbierto] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false); // 👈 NUEVO: Estado para el mensaje de éxito
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       if (comunidadId) cargarResidentes();
+      setArchivo(null); // Reset archivo al abrir
+      setPreviewName("");
       if (transactionToEdit) {
         setFormData({
           id: transactionToEdit.id,
@@ -82,6 +87,14 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
     } catch (e) { console.error("Error cargando departamentos", e); }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setArchivo(file);
+      setPreviewName(file.name);
+    }
+  };
+
   const handlePropiedadChange = async (e) => {
     const propId = e.target.value;
     setFormData(prev => ({ ...prev, propiedad_id: propId }));
@@ -122,20 +135,16 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
     if (!formData.categoria) return;
     if (!formData.monto || Number(formData.monto) <= 0) return;
 
-    onSave(formData, mantenerAbierto); 
+    // 🚀 ENVIAR AL PADRE EL FORMULARIO + EL ARCHIVO
+    onSave(formData, archivo); 
 
     if (mantenerAbierto) {
-      // 🚀 MOSTRAR MENSAJE DE ÉXITO TEMPORAL
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-
-      setFormData(prev => ({
-        ...prev,
-        monto: '',
-        descripcion: '',
-        propiedad_id: ''
-      }));
+      setFormData(prev => ({ ...prev, monto: '', descripcion: '', propiedad_id: '' }));
       setDeudaPendiente(null);
+      setArchivo(null); // Limpiar archivo tras guardar
+      setPreviewName("");
     }
   };
 
@@ -145,7 +154,6 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
     <div className="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-100 transition-all relative">
         
-        {/* NOTIFICACIÓN FLOTANTE DENTRO DEL MODAL */}
         {showSuccess && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
             <div className="bg-emerald-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-emerald-400">
@@ -167,24 +175,8 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="flex bg-gray-100/80 p-1.5 rounded-xl border border-gray-200/50 shadow-inner">
-            <button
-              type="button"
-              onClick={() => handleTypeChange('INGRESO')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${
-                formData.tipo === 'INGRESO' ? 'bg-white text-emerald-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4" /> INGRESO
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTypeChange('EGRESO')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${
-                formData.tipo === 'EGRESO' ? 'bg-white text-rose-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <TrendingDown className="w-4 h-4" /> EGRESO
-            </button>
+            <button type="button" onClick={() => handleTypeChange('INGRESO')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${formData.tipo === 'INGRESO' ? 'bg-white text-emerald-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-700'}`}><TrendingUp className="w-4 h-4" /> INGRESO</button>
+            <button type="button" onClick={() => handleTypeChange('EGRESO')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${formData.tipo === 'EGRESO' ? 'bg-white text-rose-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-700'}`}><TrendingDown className="w-4 h-4" /> EGRESO</button>
           </div>
 
           {formData.tipo === 'INGRESO' && (
@@ -245,16 +237,40 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
             </div>
           </div>
 
+          {/* 📁 SECCIÓN DE CARGA DE ARCHIVO */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Comprobante (Imagen o PDF)</label>
+            <div className="relative group">
+              <input 
+                type="file" 
+                id="file-upload" 
+                onChange={handleFileChange} 
+                accept="image/*,.pdf" 
+                className="hidden"
+              />
+              <label 
+                htmlFor="file-upload" 
+                className={`flex items-center justify-between w-full px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                  previewName ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-gray-50 border-gray-200 hover:border-indigo-400 hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${previewName ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                    {archivo?.type === 'application/pdf' ? <FileText size={16}/> : <Paperclip size={16}/>}
+                  </div>
+                  <span className="text-xs font-semibold truncate max-w-[200px]">
+                    {previewName || "Subir boleta o recibo..."}
+                  </span>
+                </div>
+                <Upload size={16} className={previewName ? 'text-indigo-500' : 'text-gray-400'} />
+              </label>
+            </div>
+          </div>
+
           {!transactionToEdit && (
             <div className="flex items-center gap-2.5 px-1 py-1 mt-2">
-              <input 
-                type="checkbox" id="mantenerAbierto" checked={mantenerAbierto}
-                onChange={(e) => setMantenerAbierto(e.target.checked)}
-                className="w-5 h-5 border-2 border-gray-300 rounded-md checked:bg-indigo-500 transition-all cursor-pointer"
-              />
-              <label htmlFor="mantenerAbierto" className="text-sm font-semibold text-gray-700 cursor-pointer select-none">
-                Mantener ventana abierta para registrar otro
-              </label>
+              <input type="checkbox" id="mantenerAbierto" checked={mantenerAbierto} onChange={(e) => setMantenerAbierto(e.target.checked)} className="w-5 h-5 border-2 border-gray-300 rounded-md checked:bg-indigo-500 transition-all cursor-pointer" />
+              <label htmlFor="mantenerAbierto" className="text-sm font-semibold text-gray-700 cursor-pointer select-none">Mantener ventana abierta</label>
             </div>
           )}
 
