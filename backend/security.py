@@ -3,16 +3,21 @@ import os
 from datetime import datetime, timedelta
 from jose import jwt, JWTError # Requiere: pip install python-jose
 
+# Importaciones nuevas necesarias para el decorador
+from functools import wraps
+from flask import request, jsonify
+from database import db_session
+
+
 # ---------------------------------------------------
 # CONFIGURACIÓN
 # ---------------------------------------------------
-# Intenta leer la llave del .env, si no hay, usa una por defecto (Inseguro para prod, cámbialo)
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secreto-cambiar-en-produccion")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 horas de sesión
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8 # 8 horas de sesión
 
 # ---------------------------------------------------
-# LÓGICA DE CONTRASEÑAS (código aprobado)
+# LÓGICA DE CONTRASEÑAS Y TOKENS
 # ---------------------------------------------------
 
 def verify_password(plain_password, hashed_password):
@@ -32,8 +37,6 @@ def get_password_hash(password):
     hashed = bcrypt.hashpw(password, bcrypt.gensalt())
     return hashed.decode('utf-8')
 
-
-
 def create_access_token(data: dict):
     """Crea un token JWT con tiempo de expiración"""
     to_encode = data.copy()
@@ -51,3 +54,38 @@ def decode_access_token(token: str):
         return payload
     except JWTError:
         return None
+
+# ---------------------------------------------------
+# 🔒 DECORADOR DE SEGURIDAD (Migrado desde main.py)
+# ---------------------------------------------------
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            if auth_header.startswith("Bearer "):
+                token = auth_header.split(" ")[1]
+        
+        if not token:
+            return jsonify({'message': 'Token es requerido'}), 401
+
+        try:
+            # Usamos la función decode_access_token que está justo arriba
+            payload = decode_access_token(token) 
+            if payload is None:
+                 return jsonify({'message': 'Token inválido o expirado'}), 401
+            from services.usuario_service import UsuarioService
+            
+            user_service = UsuarioService(db_session)
+            current_user = user_service.obtener_por_id(payload.get("id"))
+            
+            if not current_user:
+                return jsonify({'message': 'Usuario no encontrado'}), 401
+                
+        except Exception as e:
+            return jsonify({'message': 'Error de autenticación', 'error': str(e)}), 401
+
+        return f(current_user, *args, **kwargs)
+    return decorated
