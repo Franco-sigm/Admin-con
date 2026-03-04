@@ -1,5 +1,8 @@
 from sqlalchemy import func
-from models import Residente, Transaccion
+try:
+    from models import Residente, Transaccion
+except ImportError:
+    from backend.models import Residente, Transaccion
 
 
   # Ajusta el nombre del archivo si es diferente

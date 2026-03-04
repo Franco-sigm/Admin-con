@@ -1,21 +1,16 @@
-from flask import Blueprint, request, jsonify, Flask
-from security import token_required
+print("🚀 CARGANDO EL ARCHIVO NUEVO DE INFORMES!")
+from flask import Blueprint, request, jsonify
 from database import db_session
-from services.informe_service import InformeService
-from services import UsuarioService, ComunidadService, ResidenteService, TransaccionService
-import schemas
-from pydantic import ValidationError
+import traceback
 
+# EL TRUCO ESTILO FASTAPI: Importamos el archivo, no la clase
+from services import informe_service
 
 informes_bp = Blueprint('informes', __name__)
 
-
-
-#informes
 # --- RUTA 1: Listado de Morosos ---
 @informes_bp.route('/informes/morosidad', methods=['GET', 'OPTIONS'])
 def reporte_morosidad():
-    # 1. Atajar la petición fantasma (CORS)
     if request.method == 'OPTIONS':
         return '', 200
 
@@ -24,18 +19,19 @@ def reporte_morosidad():
         return jsonify({"error": "Falta el ID de la comunidad"}), 400
 
     try:
-        # ⚠️ OJO AQUÍ: Asegúrate de que 'db.session' es como llamas a tu BD en main.py
-        datos = InformeService.obtener_morosos_por_comunidad(db_session, comunidad_id)
+        comunidad_id = int(comunidad_id)
+        # LLAMAMOS A LA CLASE A TRAVÉS DEL MÓDULO (Adiós NameError)
+        datos = informe_service.InformeService.obtener_morosos_por_comunidad(db_session, comunidad_id)
         return jsonify(datos), 200
     except Exception as e:
-        print(f"Error real en morosidad: {e}") # Esto imprimirá el error en la consola
-        return jsonify({"error": "Error interno al generar reporte de morosos"}), 500
+        print(f"❌ Error en morosidad: {e}")
+        traceback.print_exc()
+        return jsonify({"error": "Error interno al generar reporte"}), 500
 
 
 # --- RUTA 2: Balance Financiero ---
 @informes_bp.route('/informes/balance', methods=['GET', 'OPTIONS'])
 def reporte_balance():
-    # 1. Atajar la petición fantasma (CORS)
     if request.method == 'OPTIONS':
         return '', 200
 
@@ -44,8 +40,11 @@ def reporte_balance():
         return jsonify({"error": "Falta el ID de la comunidad"}), 400
 
     try:
-        datos = InformeService.obtener_balance_comunidad(db_session, comunidad_id)
+        comunidad_id = int(comunidad_id)
+        # LLAMAMOS A LA CLASE A TRAVÉS DEL MÓDULO
+        datos = informe_service.InformeService.obtener_balance_comunidad(db_session, comunidad_id)
         return jsonify(datos), 200
     except Exception as e:
-        print(f"Error real en balance: {e}") 
+        print(f"❌ Error en balance: {e}") 
+        traceback.print_exc()
         return jsonify({"error": "Error interno al generar el balance"}), 500
