@@ -20,7 +20,7 @@ class ResidenteService:
         self.db.commit()
         self.db.refresh(nuevo)
         return nuevo
-
+ 
     def obtener_por_comunidad(self, comunidad_id: int):
         return self.db.query(models.Residente).filter(models.Residente.comunidad_id == comunidad_id).all()
 
