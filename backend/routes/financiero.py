@@ -5,15 +5,14 @@ import schemas
 from database import get_db
 from services import financiero_service
 from security import obtener_usuario_actual
-from utils.cloudinary import subir_comprobante_cloudinary 
 
-# Definimos el router UNA SOLA VEZ
+# 1. CAMBIO DE IMPORT: Cambiamos Cloudinary por tu nueva utilidad de Supabase
+from utils.supabase_storage import subir_comprobante_supabase 
+
 router = APIRouter(
     prefix="/api/finanzas",
     tags=["Finanzas y Pagos"]
 )
-
-# --- 1. RUTAS DE ESCRITURA (POST) ---
 
 @router.post("/transacciones", response_model=schemas.Transaccion, status_code=201)
 async def crear_movimiento_general(
@@ -29,11 +28,12 @@ async def crear_movimiento_general(
     db: Session = Depends(get_db),
     usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual)
 ):
-    """Registra movimientos con soporte para comprobantes (Imágenes y PDF)."""
+    """Registra movimientos con soporte para comprobantes en Supabase Storage."""
     
     url_comprobante = None
     
     if archivo:
+        # Validación de formatos (mantenemos tu lógica de seguridad)
         formatos_validos = ["image/jpeg", "image/png", "image/jpg", "application/pdf"]
         if archivo.content_type not in formatos_validos:
             raise HTTPException(
@@ -41,14 +41,17 @@ async def crear_movimiento_general(
                 detail=f"Archivo no permitido. Solo JPG, PNG y PDF. Recibido: {archivo.content_type}"
             )
 
-        url_comprobante = subir_comprobante_cloudinary(archivo)
+        # 2. CAMBIO DE FUNCIÓN: Ahora usamos Supabase
+        # Esta función ya se encarga de generar el nombre único y subirlo al bucket 'comprobantes'
+        url_comprobante = subir_comprobante_supabase(archivo)
         
         if not url_comprobante:
             raise HTTPException(
                 status_code=500, 
-                detail="Error al subir el archivo a Cloudinary."
+                detail="Error al subir el archivo al servidor de almacenamiento (Supabase)."
             )
 
+    # 3. Guardado en MySQL: Se mantiene igual, pero ahora 'url_comprobante' es de Supabase
     return financiero_service.crear_transaccion_general(
         db=db, 
         comunidad_id=comunidad_id,

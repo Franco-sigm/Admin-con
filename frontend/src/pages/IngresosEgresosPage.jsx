@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import ModalNuevaTransaccion from '../components/ModalNuevaTransaccion';
 import api from '../api/client'; 
 import BotonPaginado from '../components/BotonPaginado'; 
-import { Plus, Edit2, Trash2, TrendingUp, TrendingDown, Wallet, Calendar, Filter, FileText, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, TrendingUp, TrendingDown, Wallet, FileText, ExternalLink, X } from 'lucide-react';
 
 const IngresosEgresosPage = () => {
   const { id } = useParams(); 
@@ -13,6 +13,9 @@ const IngresosEgresosPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Estado para el visor de archivos (Supabase Bug Fix)
+  const [viewingFile, setViewingFile] = useState(null);
 
   const fechaActual = new Date();
   const [mes, setMes] = useState(fechaActual.getMonth() + 1); 
@@ -63,24 +66,19 @@ const IngresosEgresosPage = () => {
     }
   };
 
-  // --- 2. GUARDAR (CON SOPORTE PARA ARCHIVOS) ---
   const handleSaveTransaction = async (dataFormulario, archivoSeleccionado) => {
     const token = localStorage.getItem('token'); 
 
-    // 1. Creamos el FormData
     const formData = new FormData();
     formData.append('tipo', dataFormulario.tipo);
-    formData.append('monto_total', parseFloat(dataFormulario.monto)); // Usar float para evitar errores
+    formData.append('monto_total', parseFloat(dataFormulario.monto));
     formData.append('metodo_pago', dataFormulario.metodo_pago || 'TRANSFERENCIA');
     formData.append('descripcion', dataFormulario.descripcion || '');
     formData.append('categoria', dataFormulario.categoria || 'Otros');
     formData.append('comunidad_id', parseInt(id));
     
-    // --- EL CAMPO FALTANTE ---
-    // Si dataFormulario.fecha no existe, enviamos la fecha actual en formato YYYY-MM-DD
     const fechaEnvio = dataFormulario.fecha || new Date().toISOString().split('T')[0];
     formData.append('fecha', fechaEnvio); 
-    // -------------------------
 
     if (dataFormulario.propiedad_id) {
         formData.append('propiedad_id', parseInt(dataFormulario.propiedad_id));
@@ -98,14 +96,8 @@ const IngresosEgresosPage = () => {
         }
       };
 
-      // Decisión de endpoint
-      if (dataFormulario.tipo === 'INGRESO' && !archivoSeleccionado) {
-        // Si es ingreso sin foto, puedes usar /pagos (si este acepta JSON)
-        // Pero lo más seguro para evitar el 422 es usar /transacciones que ya acepta el FormData
-        await api.post('/api/finanzas/transacciones', formData, config);
-      } else {
-        await api.post('/api/finanzas/transacciones', formData, config); 
-      }
+      // Enviamos todo a /transacciones (Supabase se encarga en el backend)
+      await api.post('/api/finanzas/transacciones', formData, config);
 
       alert("✅ Registrado con éxito");
       fetchTransactions();
@@ -113,8 +105,8 @@ const IngresosEgresosPage = () => {
       setIsModalOpen(false);
 
     } catch (error) {
-        console.error("Error detallado:", error.response?.data); // Esto te dirá exactamente qué campo falla
-        alert("Error: " + (error.response?.data?.detail?.[0]?.msg || "Ocurrió un error al procesar la finanza."));
+        console.error("Error detallado:", error.response?.data);
+        alert("Error: " + (error.response?.data?.detail?.[0]?.msg || "Error al procesar la finanza."));
     }
   };
 
@@ -147,7 +139,7 @@ const IngresosEgresosPage = () => {
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Finanzas</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestión de ingresos, egresos y comprobantes.</p>
+          <p className="text-gray-500 text-sm mt-1">Gestión de ingresos, egresos y comprobantes para Parque Suizo.</p>
         </div>
         <button 
           onClick={() => { setEditingTransaction(null); setIsModalOpen(true); }}
@@ -159,7 +151,7 @@ const IngresosEgresosPage = () => {
 
       {/* Tarjetas Resumen */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-gradient-to-b from-green-600 to-green-800 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden group">
+        <div className="bg-gradient-to-b from-blue-800 to-blue-950 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden group">
           <div className="relative z-10">
             <p className="text-[11px] font-semibold uppercase tracking-widest mb-1 opacity-80">Balance Actual</p>
             <p className="text-4xl font-bold tracking-tight">{formatCurrency(resumenFinanciero.balance_actual)}</p>
@@ -170,7 +162,7 @@ const IngresosEgresosPage = () => {
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Ingresos Mes</p>
-            <p className="text-3xl font-bold text-gray-900">{formatCurrency(resumenFinanciero.ingresos)}</p>
+            <p className="text-3xl font-bold text-emerald-600">{formatCurrency(resumenFinanciero.ingresos)}</p>
           </div>
           <div className="p-3 bg-emerald-50 rounded-lg text-emerald-500"><TrendingUp /></div>
         </div>
@@ -178,7 +170,7 @@ const IngresosEgresosPage = () => {
         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
           <div>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Egresos Mes</p>
-            <p className="text-3xl font-bold text-gray-900">{formatCurrency(resumenFinanciero.egresos)}</p>
+            <p className="text-3xl font-bold text-rose-600">{formatCurrency(resumenFinanciero.egresos)}</p>
           </div>
           <div className="p-3 bg-rose-50 rounded-lg text-rose-500"><TrendingDown /></div>
         </div>
@@ -194,7 +186,7 @@ const IngresosEgresosPage = () => {
                     </button>
                 ))}
             </div>
-            <select value={mes} onChange={(e) => setMes(e.target.value)} className="border border-gray-200 rounded-lg p-2 text-sm font-semibold">
+            <select value={mes} onChange={(e) => setMes(e.target.value)} className="border border-gray-200 rounded-lg p-2 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
                 <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
                 <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
@@ -216,7 +208,7 @@ const IngresosEgresosPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan="6" className="p-10 text-center animate-pulse">Cargando...</td></tr>
+                <tr><td colSpan="6" className="p-10 text-center animate-pulse text-gray-400">Cargando transacciones...</td></tr>
               ) : filteredTransactions.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                   <td className="p-4 text-sm text-gray-500">{new Date(item.fecha).toLocaleDateString()}</td>
@@ -231,17 +223,20 @@ const IngresosEgresosPage = () => {
                   </td>
                   <td className="p-4 text-center">
                     {item.comprobante_url ? (
-                      <a href={item.comprobante_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-medium border border-blue-100">
-                        <FileText size={14} /> Ver <ExternalLink size={10} />
-                      </a>
+                      <button 
+                        onClick={() => setViewingFile(item.comprobante_url)}
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-medium border border-blue-100 transition-colors"
+                      >
+                        <FileText size={14} /> Ver
+                      </button>
                     ) : (
                       <span className="text-gray-300 text-xs">-</span>
                     )}
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditModal(item)} className="text-gray-400 hover:text-blue-600"><Edit2 size={16} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="text-gray-400 hover:text-rose-600"><Trash2 size={16} /></button>
+                      <button onClick={() => openEditModal(item)} className="text-gray-400 hover:text-blue-600 transition-colors"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDelete(item.id)} className="text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -256,6 +251,66 @@ const IngresosEgresosPage = () => {
           </div>
         )}
       </div>
+
+      {/* --- MODAL DE VISOR DE ARCHIVOS (SUPABASE READY) --- */}
+      {viewingFile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-all">
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200">
+            <div className="p-4 border-b flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <FileText size={20} />
+                </div>
+                <h3 className="font-bold text-gray-800 text-lg">Visualización de Comprobante</h3>
+              </div>
+              <button 
+                onClick={() => setViewingFile(null)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 bg-gray-100 relative overflow-hidden">
+              {viewingFile.toLowerCase().includes('.pdf') ? (
+                <iframe 
+                  src={viewingFile} 
+                  className="w-full h-full border-none bg-white"
+                  title="Visor PDF Supabase"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-8">
+                  <img 
+                    src={viewingFile} 
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-xl" 
+                    alt="Comprobante"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 bg-white border-t flex justify-between items-center">
+              <span className="text-xs text-gray-400 font-medium">Servido desde Supabase Storage</span>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setViewingFile(null)}
+                  className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cerrar
+                </button>
+                <a 
+                  href={viewingFile} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all shadow-md"
+                >
+                  Abrir original <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ModalNuevaTransaccion 
         isOpen={isModalOpen} 
