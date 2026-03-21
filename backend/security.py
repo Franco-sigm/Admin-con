@@ -1,93 +1,63 @@
-from datetime import datetime, timedelta
-from typing import Union
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import os
+import jwt
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from database import get_db # <--- Importamos la conexión DB
-import models # <--- Importamos tus tablas
 
-# 1. CONFIGURACIÓN
-# IMPORTANTE: En un trabajo real, esta clave va en un archivo .env, no aquí.
-# Por ahora, esta cadena larga y aleatoria.
-SECRET_KEY = "ESTA_ES_UNA_CLAVE_SUPER_SECRETA_QUE_NADIE_DEBE_SABER_12345" 
+# Importaciones locales
+from database import get_db
+from services import usuario_service
+
+# Configuraciones de seguridad
+SECRET_KEY = os.getenv('SECRET_KEY', 'clave-super-secreta-cambiar-en-env')
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # El token dura 24 horas (1 día)
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # El token dura 7 días
 
-# 2. CONTEXTO DE ENCRIPTACIÓN (Usamos bcrypt, el estándar de la industria)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Le decimos a FastAPI dónde está la ruta de login para que arme el botón "Authorize" en Swagger
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/usuarios/login")
 
-# --- FUNCIONES DE UTILIDAD ---
-
-def verify_password(plain_password, hashed_password):
-    """
-    Compara una contraseña normal (ej: '123') con la encriptada de la DB.
-    Devuelve True si coinciden.
-    """
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    """
-    Toma una contraseña normal y la convierte en un hash ilegible.
-    Ej: '123' -> '$2b$12$EixZaYVK1fsdf...'
-    """
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
-    """
-    Genera el Token JWT (JSON Web Token).
-    Este es el string largo que el Frontend guardará para recordar la sesión.
-    """
+def crear_token_acceso(data: dict, expires_delta: Optional[timedelta] = None):
+    """Genera el Token JWT cuando el usuario hace login exitosamente."""
     to_encode = data.copy()
-    
-    # Definir cuándo expira el token
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    # Agregamos la fecha de expiración a los datos
+        expire = datetime.now(timezone.utc) + timedelta(hours=8)
+        
     to_encode.update({"exp": expire})
-    
-    # Creamos el token codificado
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    
     return encoded_jwt
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """
-    Esta función se ejecuta automáticamente en cada ruta protegida.
-    1. Lee el token del encabezado.
-    2. Verifica que sea válido y no haya expirado.
-    3. Busca al usuario en la DB por su email.
-    4. Si todo está bien, devuelve al usuario (con su ID).
+    Esta es la función barrera (Depends). 
+    Se encarga de interceptar el token, abrirlo, ver quién es y dejarlo pasar.
     """
-    credentials_exception = HTTPException(
+    credenciales_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No se pudo validar las credenciales",
+        detail="No se pudieron validar las credenciales o el token expiró",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
     try:
-        # Intentamos decodificar el token
+        # Decodificamos el token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         
-        # FastAPI usa "sub" por estándar para guardar el identificador (email)
-        email: str = payload.get("sub") 
-        
-        if email is None:
-            raise credentials_exception
+        # Extraemos el ID que guardamos dentro del token
+        usuario_id: int = payload.get("id")
+        if usuario_id is None:
+            raise credenciales_exception
             
-    except JWTError:
-        raise credentials_exception
-    
-    # Buscamos al usuario en la Base de Datos
-    user = db.query(models.Usuario).filter(models.Usuario.email == email).first()
-    
-    if user is None:
-        raise credentials_exception
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="El token ha expirado")
+    except jwt.InvalidTokenError:
+        raise credenciales_exception
+
+    # Buscamos al usuario en la base de datos para confirmar que sigue existiendo
+    usuario = usuario_service.obtener_usuario_por_id(db=db, usuario_id=usuario_id)
+    if not usuario:
+        raise credenciales_exception
         
-    return user
+    return usuario

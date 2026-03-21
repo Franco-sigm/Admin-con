@@ -1,5 +1,8 @@
-from a2wsgi import ASGIMiddleware
-from main import app as application
+import sys
+import os
 
-# Adaptador para que cPanel pueda correr FastAPI
-application = ASGIMiddleware(application)
+# Agregamos el directorio actual al path
+sys.path.insert(0, os.path.dirname(__file__))
+
+# Importamos la variable 'app' desde main.py como 'application'
+from main import app as application

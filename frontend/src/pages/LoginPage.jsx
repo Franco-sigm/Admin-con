@@ -3,47 +3,55 @@ import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo-conadmin.png'; 
 import BotonSalir from '../components/BotonSalir.jsx';
 
+// IMPORTACIÓN CLAVE: Usamos tu cliente de API configurado
+import api from '../api/client'; 
+
 const LoginPage = () => {
-  // 1. TU LÓGICA DE ESTADO
+  // 1. ESTADOS
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // Agregué un estado de carga visual
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // 2. TU FUNCIÓN DE LOGIN (Adaptada a fetch para evitar errores)
+  // 2. FUNCIÓN LOGIN (Optimizada con Axios)
+ // 2. FUNCIÓN LOGIN (Adaptada para FastAPI OAuth2)
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // FastAPI espera x-www-form-urlencoded
-    const params = new URLSearchParams();
-    params.append('username', email); 
-    params.append('password', password);
-
     try {
-      // Usamos fetch directo a tu backend
-      const response = await fetch('http://localhost:8000/token', {
-        method: 'POST',
+      // 1. Preparamos los datos como Form Data (Exigencia de FastAPI)
+      const formData = new URLSearchParams();
+      formData.append('username', email); // Tiene que llamarse 'username', no 'email'
+      formData.append('password', password);
+
+      // 2. Apuntamos a la ruta correcta de tu router y forzamos el Content-Type
+      const response = await api.post('/api/usuarios/login', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: params
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // GUARDAMOS EL TOKEN
-        localStorage.setItem('token', data.access_token);
-        
-        // Nos vamos al Dashboard (Cambié /home por /dashboard que es tu ruta real)
-        navigate('/home');
-      } else {
-        alert("Credenciales incorrectas"); // O podrías poner un mensaje de error más bonito
-      }
+      // 3. Extraemos el token del JSON de respuesta de FastAPI
+      const { access_token } = response.data;
+
+      // 4. Guardamos el token para que tu client.js lo inyecte automáticamente después
+      localStorage.setItem('token', access_token);
+      
+      console.log("¡Login exitoso! Token guardado.");
+      navigate('/home'); 
+
     } catch (error) {
-      console.error(error);
-      alert("Error de conexión con el servidor");
+      console.error("Error en login:", error);
+      
+      if (error.response) {
+        // Mostramos el mensaje exacto que FastAPI nos envía ("Email o contraseña incorrectos")
+        alert(error.response.data.detail || "Error de credenciales");
+      } else if (error.request) {
+        alert("El servidor backend parece estar apagado.");
+      } else {
+        alert("Error procesando la solicitud.");
+      }
     } finally {
       setLoading(false);
     }
@@ -55,20 +63,17 @@ const LoginPage = () => {
         <BotonSalir />
       </div>
       
-      {/* --- LADO IZQUIERDO: DISEÑO VISUAL --- */}
+      {/* --- LADO IZQUIERDO: DISEÑO VISUAL (Intacto) --- */}
       <div className="relative overflow-hidden bg-gradient-to-tr from-emerald-600 to-[oklch(50%_0.134_242.749)] flex items-center justify-center p-12 lg:p-20 hidden md:flex">
         
-        {/* Decoración de fondo */}
+        {/* Decoración */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl z-0 pointer-events-none"></div>
         <div className="absolute bottom-12 right-12 w-64 h-64 bg-[oklch(50%_0.134_242.749)]/40 rounded-full blur-2xl z-0 pointer-events-none"></div>
 
         {/* Tarjeta Glassmorphism */}
         <div className="relative group z-10 bg-white/10 backdrop-blur-lg border border-white/20 p-10 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center justify-center">
-             
-             {/* 👇 AQUÍ CAMBIÉ h-24 POR h-40 */}
              <img className="h-48 w-auto drop-shadow-lg animate-trompo" src={logo} alt="logo-ConAdmin" />
-             
              <span className="font-bold text-3xl text-white -mt-12 tracking-tight">
                ConAdmin
              </span>
@@ -79,7 +84,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* --- LADO DERECHO: FORMULARIO FUNCIONAL --- */}
+      {/* --- LADO DERECHO: FORMULARIO --- */}
       <div className="flex items-center justify-center p-6 sm:p-12 bg-white">
         <div className="w-full max-w-md space-y-8">
           
@@ -92,7 +97,6 @@ const LoginPage = () => {
             </p>
           </div>
 
-          {/* 3. VINCULACIÓN DEL FORMULARIO */}
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             <div className="rounded-md shadow-sm space-y-4">
               <div>
@@ -105,7 +109,7 @@ const LoginPage = () => {
                   required
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(50%_0.134_242.749)] focus:border-transparent sm:text-sm transition-all"
                   placeholder="Correo electrónico"
-                  value={email} // Vinculado al estado
+                  value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
@@ -119,7 +123,7 @@ const LoginPage = () => {
                   required
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[oklch(50%_0.134_242.749)] focus:border-transparent sm:text-sm transition-all"
                   placeholder="Contraseña"
-                  value={password} // Vinculado al estado
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>

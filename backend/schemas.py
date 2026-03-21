@@ -1,24 +1,34 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr
+from typing import Optional, Any, List, Literal
 from datetime import date, datetime
 from enum import Enum
 
-# --- DEFINICIÓN DE ENUMS ---
-class EstadoPago(str, Enum):
-    AL_DIA = 'AL_DIA'
-    MOROSO = 'MOROSO'
-
+# ==========================================
+# DEFINICIÓN DE ENUMS (Globales)
+# ==========================================
 class TipoTransaccion(str, Enum):
     INGRESO = 'INGRESO'
     EGRESO = 'EGRESO'
 
-class PrioridadAnuncio(str, Enum):
-    alta = 'alta'
-    normal = 'normal'
-    baja = 'baja'
+class MetodoPago(str, Enum):
+    TRANSFERENCIA = 'TRANSFERENCIA'
+    EFECTIVO = 'EFECTIVO'
+    WEBPAY = 'WEBPAY'
+    OTRO = 'OTRO'
+
+class EsPropietario(str, Enum):
+    SI = 'SI'
+    NO = 'NO'
+
+class EstadoCargo(str, Enum):
+    PENDIENTE = 'PENDIENTE'
+    PARCIAL = 'PARCIAL'
+    PAGADO = 'PAGADO'
 
 
-# --- 1. SCHEMAS DE COMUNIDAD ---
+# ==========================================
+# 1. SCHEMAS DE COMUNIDAD
+# ==========================================
 class ComunidadBase(BaseModel):
     nombre: str
     direccion: Optional[str] = None
@@ -30,92 +40,167 @@ class ComunidadCreate(ComunidadBase):
 
 class Comunidad(ComunidadBase):
     id: int
-    usuario_id: int  # <--- ¡AGREGADO! Vital para saber quién es el dueño
+    usuario_id: int  
     
     class Config:
         from_attributes = True
 
 
-# --- 2. SCHEMAS DE RESIDENTES ---
+# ==========================================
+# 2. SCHEMAS DE PROPIEDADES (¡NUEVO!)
+# ==========================================
+class PropiedadBase(BaseModel):
+    numero_unidad: str
+    prorrateo: float = 0.0
+    comunidad_id: Optional[int] = None # Esto se asignará al crear la propiedad, no es necesario en el update
+
+class PropiedadCreate(PropiedadBase):
+    comunidad_id: int
+
+class Propiedad(PropiedadBase):
+    id: int
+    comunidad_id: int
+
+    class Config:
+        from_attributes = True
+
+class PropiedadesPaginadas(BaseModel):
+    total: int
+    items: List[Propiedad]
+
+
+# ==========================================
+# 3. SCHEMAS DE RESIDENTES (Actualizado)
+# ==========================================
 class ResidenteBase(BaseModel):
     nombre: str
-    email: Optional[str] = None
-    unidad: str
+    email: Optional[EmailStr] = None 
     telefono: Optional[str] = None
-    estado_pago: EstadoPago = EstadoPago.AL_DIA
+    es_propietario: EsPropietario = EsPropietario.NO
 
 class ResidenteCreate(ResidenteBase):
-    comunidad_id: int
+    # VOLVEMOS a propiedad_id, porque React envía un número entero al crear
+    propiedad_id: Optional[int] = None 
+    
+    # Campos "mágicos" para crear la propiedad al mismo tiempo si no existe
+    numero_unidad: Optional[str] = None
+    prorrateo: Optional[float] = 0.0
+    comunidad_id: Optional[int] = None
 
+class ResidenteUpdate(BaseModel):
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefono: Optional[str] = None
+    es_propietario: Optional[EsPropietario] = None
+    
 class Residente(ResidenteBase):
     id: int
-    comunidad_id: int
+    
+    #  ELIMINAMOS propiedad_id: int (ya no existe en la base de datos)
+    
+    # AGREGAMOS la lista de propiedades (Usamos comillas por si el schema Propiedad está más abajo)
+    propiedades: List["Propiedad"] = []
+
+    class Config:
+        from_attributes = True
+
+class ResidentesPaginados(BaseModel):
+    total: int
+    items: List[Residente]
+
+
+# ==========================================
+# 4. SCHEMAS DE CARGOS / DEUDAS (¡NUEVO!)
+# ==========================================
+class CargoBase(BaseModel):
+    propiedad_id: int
+    monto: int
+    concepto: str
+    fecha_vencimiento: date
+    # El estado por defecto será PENDIENTE si no se envía
+    estado: Literal['PENDIENTE', 'PARCIAL', 'PAGADO'] = 'PENDIENTE'
+
+class CargoCreate(CargoBase):
+    pass
+
+class Cargo(CargoBase):
+    id: int
+    fecha_emision: date  # La base de datos lo genera, así que lo devolvemos al leer
 
     class Config:
         from_attributes = True
 
 
-# --- 3. SCHEMAS DE TRANSACCIONES ---
-class TipoTransaccion(str, Enum):
-    INGRESO = "INGRESO"
-    EGRESO = "EGRESO"
-
-# Esquema base
+# ==========================================
+# 5. SCHEMAS DE TRANSACCIONES (Actualizado)
+# ==========================================
 class TransaccionBase(BaseModel):
     tipo: TipoTransaccion
+    metodo_pago: MetodoPago
+    monto_total: int
+    fecha: Optional[date] = None
     descripcion: Optional[str] = None
-    categoria: Optional[str] = None  # <--- ¡AGREGA ESTO AQUÍ!
-    monto: int
-    fecha: date
+    categoria: Optional[str] = "Otros"
+    comprobante_url: Optional[str] = None
 
-# Esquema para crear (Create)
 class TransaccionCreate(TransaccionBase):
     comunidad_id: int 
+    propiedad_id: Optional[int] = None # Opcional porque un EGRESO (pagar al conserje) no tiene propiedad
 
-# Esquema para leer (Response)
+class TransaccionUpdate(BaseModel):
+    tipo: Optional[TipoTransaccion] = None  
+    metodo_pago: Optional[MetodoPago] = None
+    monto_total: Optional[int] = None
+    descripcion: Optional[str] = None
+    fecha: Optional[Any] = None 
+    comprobante_url: Optional[str] = None
+
 class Transaccion(TransaccionBase):
     id: int
+    comunidad_id: int
+    propiedad_id: Optional[int]
     
     class Config:
-        from_attributes = True # Antes orm_mode = True
+        from_attributes = True
 
+class TransaccionesPaginadas(BaseModel):
+    total: int
+    items: List[Transaccion]
 
-# --- 4. SCHEMAS DE ANUNCIOS ---
-class AnuncioBase(BaseModel):
-    titulo: str
-    prioridad: PrioridadAnuncio = PrioridadAnuncio.normal
-    mensaje: str
+# ==========================================
+# 6. SCHEMAS DE DETALLE DE PAGOS (¡NUEVO!)
+# ==========================================
+class DetallePagoBase(BaseModel):
+    cargo_id: int
+    monto_abonado: int
 
-class AnuncioCreate(AnuncioBase):
-    comunidad_id: int
+class DetallePagoCreate(DetallePagoBase):
+    transaccion_id: int
 
-class Anuncio(AnuncioBase):
+class DetallePago(DetallePagoBase):
     id: int
-    comunidad_id: int
-    fecha_creacion: datetime
+    transaccion_id: int
 
     class Config:
         from_attributes = True
 
 
-# --- 5. ESQUEMAS DE TOKEN ---
+# ==========================================
+# 7. ESQUEMAS DE SEGURIDAD Y USUARIOS
+# ==========================================
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
-    id: Optional[int] = None      # <--- AGREGADO: Útil para validaciones
-    rol: Optional[str] = None     # <--- AGREGADO: Útil para permisos
-
-
-# --- 6. ESQUEMAS DE USUARIO ---
+    id: Optional[int] = None      
+    rol: Optional[str] = None     
 
 class UsuarioBase(BaseModel):
     nombre: str
-    email: str
-    rol: Optional[str] = "CONSERJE" 
-    comunidad_id: Optional[int] = None # Dónde trabaja (para conserjes)
+    email: EmailStr 
+    comunidad_id: Optional[int] = None 
 
 class UsuarioCreate(UsuarioBase):
     password: str
@@ -123,9 +208,30 @@ class UsuarioCreate(UsuarioBase):
 class Usuario(UsuarioBase):
     id: int
     # No incluimos password aquí por seguridad
-    
-    # Opcional: Para ver sus comunidades si quisieras en el futuro
-    # comunidades_creadas: List[Comunidad] = [] 
 
     class Config:
         from_attributes = True
+
+class CierreMensualBase(BaseModel):
+    mes: int
+    anio: int
+    total_ingresos: float
+    total_egresos: float
+    saldo_final: float
+
+# Esquema para la creación (si fuera necesario enviar datos manualmente)
+class CierreMensualCreate(CierreMensualBase):
+    comunidad_id: int
+
+# Esquema para la respuesta (Lo que el API devuelve al Frontend)
+class CierreMensual(CierreMensualBase):
+    id: int
+    comunidad_id: int
+    fecha_cierre: datetime
+    comprobante_resumen_url: Optional[str] = None
+    cerrado_por_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True # Permite mapear desde modelos de SQLAlchemy
+
+

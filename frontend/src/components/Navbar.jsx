@@ -1,51 +1,88 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // 1. Importamos useNavigate
-import logo from '../assets/logo-conadmin.png'; 
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, Sun, Moon, Bell, User, Settings } from 'lucide-react';
 
 const Navbar = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // 2. Inicializamos el hook de navegación
-  
+  const navigate = useNavigate();
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Lógica para alternar Dark Mode en el HTML
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   const rutasSinNavbar = ['/', '/login', '/register']; 
   
   if (rutasSinNavbar.includes(location.pathname)) {
     return null;
   }
 
-  // 3. ESTA ES LA FUNCIÓN DE SEGURIDAD
   const handleLogout = () => {
-    // A. Borramos la credencial de seguridad
     localStorage.removeItem('token'); 
-    
-    // B. Redirigimos al usuario (al Login)
     navigate('/login'); 
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-500 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           
-          {/* IZQUIERDA: LOGO */}
-          <div className="flex items-center -ml-9 group">
-             <img className="h-16 w-auto animate-trompo" src={logo} alt="logo-ConAdmin" />
-             <span className="font-bold text-xl hidden sm:block -ml-8 -mt-2">
-               <span className="text-[oklch(50%_0.134_242.749)]">CONADMIN</span>
+          {/* IZQUIERDA: NOMBRE DE MARCA (Sin Logo) */}
+          <div className="flex items-center group cursor-pointer" onClick={() => navigate('/dashboard')}>
+             <div className="p-2 bg-indigo-600 rounded-lg mr-3 shadow-md shadow-indigo-200 dark:shadow-none">
+                <Settings className="w-5 h-5 text-white animate-spin-slow" />
+             </div>
+             <span className="font-bold text-xl tracking-tight">
+               <span className="text-indigo-600 dark:text-indigo-400">CON</span>
+               <span className="text-gray-900 dark:text-white">ADMIN</span>
              </span>
           </div>
 
-          {/* DERECHA: BOTÓN SALIR SEGURO */}
-          <div className="flex items-center">
-            {/* 4. QUITAMOS EL <Link> Y USAMOS onClick 
-               Ya no es un enlace simple, ahora es un botón funcional 
-            */}
+          {/* DERECHA: COMPONENTES GENÉRICOS Y DARK MODE */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            
+            {/* BOTÓN DARK MODE */}
+            <button 
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all active:scale-90"
+              title={darkMode ? "Modo Claro" : "Modo Oscuro"}
+            >
+              {darkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            {/* NOTIFICACIONES (Genérico) */}
+            <button className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-gray-900"></span>
+            </button>
+
+            {/* PERFIL (Genérico) */}
+            <div className="h-8 w-px bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block"></div>
+            
+            <button className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs border border-indigo-200 dark:border-indigo-800">
+                <User className="w-4 h-4" />
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">Admin</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">Gestor</p>
+              </div>
+            </button>
+
+            {/* BOTÓN SALIR */}
             <button 
               onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-red-500 transition px-3 py-2 rounded-md hover:bg-red-50"
+              className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-rose-500 dark:text-gray-400 dark:hover:text-rose-400 transition-all px-3 py-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20"
             >
-              <span>Salir</span>
-              <span>➔</span>
+              <span className="hidden sm:inline">Salir</span>
+              <LogOut className="w-4 h-4" />
             </button>
+
           </div>
 
         </div>
