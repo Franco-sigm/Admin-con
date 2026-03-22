@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ModalNuevaTransaccion from '../components/ModalNuevaTransaccion';
-import SeccionCierreMes from '../components/SeccionCierreMes'; 
+import SeccionCierreMes from '../components/SeccionCierreMes'; // 👈 Asegura que el nombre coincida
 import api from '../api/client'; 
-import BotonPaginado from '../components/BotonPaginado'; 
+import BotonPaginado from '../components/BotonPaginado';
 import { Plus, Edit2, Trash2, TrendingUp, TrendingDown, Wallet, FileText, ExternalLink, X, Calendar } from 'lucide-react';
 
 const IngresosEgresosPage = () => {
@@ -20,7 +20,6 @@ const IngresosEgresosPage = () => {
   const [mes, setMes] = useState(fechaActual.getMonth() + 1); 
   const [anio, setAnio] = useState(fechaActual.getFullYear());
   
-  // Generamos lista de años dinámicamente
   const añosSoportados = [2024, 2025, 2026];
 
   const [page, setPage] = useState(1);
@@ -34,6 +33,7 @@ const IngresosEgresosPage = () => {
     balance_actual: 0
   });
 
+  // Cada vez que cambies mes o año, se recargarán los datos automáticamente
   useEffect(() => {
     if(id) {
         fetchTransactions();
@@ -92,6 +92,17 @@ const IngresosEgresosPage = () => {
       setIsModalOpen(false);
     } catch (error) {
         alert("Error al procesar la finanza.");
+    }
+  };
+
+  const handleDelete = async (transaccionId) => {
+    if (!window.confirm("¿Estás seguro de eliminar este registro?")) return;
+    try {
+      await api.delete(`/api/finanzas/transacciones/${transaccionId}`);
+      fetchTransactions();
+      fetchBalance();
+    } catch (error) {
+      alert("No se pudo eliminar.");
     }
   };
 
@@ -172,7 +183,7 @@ const IngresosEgresosPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan="5" className="p-10 text-center text-gray-400">Cargando...</td></tr>
+                <tr><td colSpan="5" className="p-10 text-center text-gray-400">Cargando transacciones...</td></tr>
               ) : filteredTransactions.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                   <td className="p-4 text-sm text-gray-500">{new Date(item.fecha).toLocaleDateString()}</td>
@@ -190,7 +201,7 @@ const IngresosEgresosPage = () => {
         </div>
       </div>
 
-      {/* SECCIÓN DE CIERRE CON DATOS MANUALES */}
+      {/* SECCIÓN DE CIERRE DINÁMICO */}
       {id && (
         <SeccionCierreMes 
           comunidadId={id} 
@@ -203,7 +214,6 @@ const IngresosEgresosPage = () => {
         />
       )}
 
-      {/* Modales y Visores (Igual que antes) */}
       <ModalNuevaTransaccion isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} />
     </div>
   );

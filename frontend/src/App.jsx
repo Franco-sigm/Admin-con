@@ -17,7 +17,7 @@ import CargosPage from './pages/CargosPage'
 import InformesPage from './pages/InformesPage'
 import PropiedadesPage from './pages/PropiedadesPage' 
 import ReportesPage from './pages/ReportesPage' 
-import CierreMes from './pages/CierreMes'
+
  
 // Componentes Globales
 import Navbar from './components/Navbar'
@@ -114,7 +114,7 @@ function App() {
                 <RouteRR path="cargos" element={<CargosPage />} />
                <RouteRR path="informes" element={<InformesPage />} /> 
                <RouteRR path="reportes" element={<ReportesPage />} />
-                <RouteRR path="cierre-mes" element={<CierreMes />} />
+           
                
               {/* Aquí agregarás más módulos en el futuro (Conserjería, Anuncios, etc.) */}
                

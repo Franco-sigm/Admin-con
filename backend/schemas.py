@@ -201,6 +201,7 @@ class UsuarioBase(BaseModel):
     nombre: str
     email: EmailStr 
     comunidad_id: Optional[int] = None 
+    rol: str = "ADMIN"  # Valor por defecto, pero se puede cambiar al crear el usuario
 
 class UsuarioCreate(UsuarioBase):
     password: str

@@ -35,7 +35,7 @@ class Usuario(Base):
     email = Column(String(150), unique=True, index=True)
     password_hash = Column(String(255)) 
     comunidades_creadas = relationship("Comunidad", back_populates="creador")
-
+    rol = Column(String, default="ADMIN")
 # tabla intermediaruia para la relación muchos a muchos entre Residentes y Propiedades 
 
 residente_propiedad = Table(

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, date, timedelta # Añadimos date y timedelta
 from models import Transaccion, CierreMensual, Propiedad, Cargo
 from fastapi import HTTPException
 
@@ -16,7 +16,6 @@ def ejecutar_cierre_mensual(db: Session, comunidad_id: int, mes: int, anio: int,
         raise HTTPException(status_code=400, detail="Este mes ya ha sido cerrado.")
 
     # 2. Calcular Totales del Mes (Ingresos y Egresos)
-    # Filtramos por comunidad, tipo, mes y año de la fecha de la transacción
     totales = db.query(
         Transaccion.tipo,
         func.sum(Transaccion.monto_total).label("total")
@@ -32,7 +31,7 @@ def ejecutar_cierre_mensual(db: Session, comunidad_id: int, mes: int, anio: int,
     for t in totales:
         if t.tipo == 'INGRESO':
             ingresos_val = float(t.total)
-        else:
+        elif t.tipo == 'EGRESO': # Usamos elif para mayor claridad
             egresos_val = float(t.total)
 
     # 3. Crear el registro de Cierre
@@ -49,25 +48,33 @@ def ejecutar_cierre_mensual(db: Session, comunidad_id: int, mes: int, anio: int,
     db.add(nuevo_cierre)
     
     # 4. PRORRATEO: Generar Cargos Automáticos
-    # Aquí es donde ConAdmin se vuelve inteligente
-    # Buscamos todas las propiedades de la comunidad
     propiedades = db.query(Propiedad).filter(Propiedad.comunidad_id == comunidad_id).all()
     
+    if not propiedades:
+        raise HTTPException(status_code=404, detail="No hay propiedades registradas en esta comunidad.")
+
+    # Calculamos una fecha de vencimiento (ej: 10 días desde hoy)
+    fecha_venc = date.today() + timedelta(days=10)
+
     for prop in propiedades:
-        # Si no hay coeficiente, usamos un prorrateo equitativo (1 / total_propiedades)
-        # Pero lo ideal es: monto = egresos_val * prop.coeficiente
-        coeficiente = prop.coeficiente if prop.coeficiente else (1 / len(propiedades))
+        # Lógica de coeficiente
+        coeficiente = float(prop.coeficiente) if prop.coeficiente else (1.0 / len(propiedades))
         monto_a_cobrar = egresos_val * coeficiente
 
         nuevo_cargo = Cargo(
             propiedad_id=prop.id,
-            monto=round(monto_a_cobrar, 0),
-            descripcion=f"Gasto Común - {mes}/{anio}",
-            fecha_emision=datetime.now(),
+            monto=int(round(monto_a_cobrar, 0)), # Convertimos a INT para pesos chilenos
+            concepto=f"Gasto Común - {mes}/{anio}",
+            fecha_emision=date.today(), # Usamos date.today() para coincidir con el tipo Date
+            fecha_vencimiento=fecha_venc, # 👈 AGREGADO: Evita el error de nullable=False
             estado="PENDIENTE"
         )
         db.add(nuevo_cargo)
 
-    db.commit()
-    db.refresh(nuevo_cierre)
-    return nuevo_cierre
+    try:
+        db.commit()
+        db.refresh(nuevo_cierre)
+        return nuevo_cierre
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al guardar el cierre: {str(e)}")
