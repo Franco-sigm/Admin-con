@@ -152,7 +152,7 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
 
   return (
     <div className="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-100 transition-all relative">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden transform scale-100 transition-all relative">
         
         {showSuccess && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-bounce">
@@ -163,7 +163,7 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
           </div>
         )}
 
-        <div className="bg-gray-50/80 px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+        <div className="bg-gray-50/80 px-6 py-5 border-b border-gray-100 flex justify-between items-center shrink-0">
           <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${formData.tipo === 'INGRESO' ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
             {transactionToEdit ? 'Editar Movimiento' : 'Registrar Movimiento'}
@@ -173,7 +173,7 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
           <div className="flex bg-gray-100/80 p-1.5 rounded-xl border border-gray-200/50 shadow-inner">
             <button type="button" onClick={() => handleTypeChange('INGRESO')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${formData.tipo === 'INGRESO' ? 'bg-white text-emerald-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-700'}`}><TrendingUp className="w-4 h-4" /> INGRESO</button>
             <button type="button" onClick={() => handleTypeChange('EGRESO')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 ${formData.tipo === 'EGRESO' ? 'bg-white text-rose-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-700'}`}><TrendingDown className="w-4 h-4" /> EGRESO</button>
