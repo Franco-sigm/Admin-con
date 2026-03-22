@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ModalNuevaTransaccion from '../components/ModalNuevaTransaccion';
-import SeccionCierreMes from '../components/SeccionCierreMes'; // 👈 Asegura que el nombre coincida
+import SeccionCierreMes from '../components/SeccionCierreMes'; 
 import api from '../api/client'; 
 import BotonPaginado from '../components/BotonPaginado';
 import { Plus, Edit2, Trash2, TrendingUp, TrendingDown, Wallet, FileText, ExternalLink, X, Calendar } from 'lucide-react';
@@ -13,9 +13,10 @@ const IngresosEgresosPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Estado para el visor de archivos
   const [viewingFile, setViewingFile] = useState(null);
 
-  // --- SELECCIÓN MANUAL DE PERIODO ---
   const fechaActual = new Date();
   const [mes, setMes] = useState(fechaActual.getMonth() + 1); 
   const [anio, setAnio] = useState(fechaActual.getFullYear());
@@ -33,7 +34,6 @@ const IngresosEgresosPage = () => {
     balance_actual: 0
   });
 
-  // Cada vez que cambies mes o año, se recargarán los datos automáticamente
   useEffect(() => {
     if(id) {
         fetchTransactions();
@@ -112,7 +112,7 @@ const IngresosEgresosPage = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
       
-      {/* Encabezado */}
+      {/* 1. Encabezado */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Finanzas</h1>
@@ -126,7 +126,7 @@ const IngresosEgresosPage = () => {
         </button>
       </div>
 
-      {/* Tarjetas Resumen */}
+      {/* 2. Tarjetas Resumen */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-gradient-to-b from-blue-800 to-blue-950 text-white p-6 rounded-2xl shadow-lg">
           <p className="text-[11px] font-semibold uppercase tracking-widest mb-1 opacity-80">Balance Actual</p>
@@ -142,11 +142,9 @@ const IngresosEgresosPage = () => {
         </div>
       </div>
 
-      {/* FILTROS Y SELECCIÓN MANUAL DE PERIODO */}
+      {/* 3. FILTROS Y TABLA */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b flex flex-col sm:flex-row justify-between items-center gap-6 bg-gray-50/50">
-            
-            {/* SELECTORES DE MES Y AÑO */}
             <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
                 <Calendar className="text-blue-900 ml-2" size={18} />
                 <select value={mes} onChange={(e) => setMes(parseInt(e.target.value))} className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer">
@@ -191,17 +189,37 @@ const IngresosEgresosPage = () => {
                   <td className={`p-4 text-right font-bold ${item.tipo === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(item.monto_total)}</td>
                   <td className="p-4 text-center"><span className={`px-2 py-1 rounded text-[10px] font-bold ${item.tipo === 'INGRESO' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{item.tipo}</span></td>
                   <td className="p-4 text-center">
-                    <button onClick={() => setViewingFile(item.comprobante_url)} className="text-blue-600 hover:underline text-xs mr-2">Ver</button>
-                    <button onClick={() => handleDelete(item.id)} className="text-rose-400 hover:text-rose-600"><Trash2 size={16} /></button>
+                    {/* BOTÓN "VER" QUE ACTIVA EL VISOR */}
+                    {item.comprobante_url ? (
+                        <button 
+                            onClick={() => setViewingFile(item.comprobante_url)} 
+                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-medium border border-blue-100 transition-colors"
+                        >
+                            <FileText size={14} /> Ver
+                        </button>
+                    ) : (
+                        <span className="text-gray-300 text-xs">-</span>
+                    )}
+                    <button onClick={() => handleDelete(item.id)} className="ml-3 text-rose-400 hover:text-rose-600"><Trash2 size={16} /></button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+         {totalItems > 0 && (
+              <div className="px-6 py-2 bg-gray-50 border-t border-gray-200/80">
+                <BotonPaginado
+                  page={page} 
+                  setPage={setPage} 
+                  totalPages={totalPages} 
+                />
+              </div>
+            )}
       </div>
 
-      {/* SECCIÓN DE CIERRE DINÁMICO */}
+      {/* 4. SECCIÓN DE CIERRE DINÁMICO */}
       {id && (
         <SeccionCierreMes 
           comunidadId={id} 
@@ -212,6 +230,37 @@ const IngresosEgresosPage = () => {
             fetchBalance();
           }}
         />
+      )}
+
+      {/* 5. MODAL DE VISOR DE ARCHIVOS (ESTO ERA LO QUE FALTABA) */}
+      {viewingFile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center bg-white">
+              <h3 className="font-bold text-gray-800">Visualización de Comprobante</h3>
+              <button onClick={() => setViewingFile(null)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 bg-gray-100 overflow-hidden">
+              {viewingFile.toLowerCase().includes('.pdf') ? (
+                <iframe src={viewingFile} className="w-full h-full" title="PDF Viewer" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img src={viewingFile} className="max-w-full max-h-full object-contain shadow-lg" alt="Comprobante" />
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 bg-white border-t flex justify-end gap-3">
+              <button onClick={() => setViewingFile(null)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Cerrar</button>
+              <a href={viewingFile} target="_blank" rel="noreferrer" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg flex items-center gap-2">
+                Abrir Original <ExternalLink size={14} />
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       <ModalNuevaTransaccion isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} />
