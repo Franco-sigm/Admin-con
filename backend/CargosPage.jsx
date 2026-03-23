@@ -20,6 +20,8 @@ const CargosPage = () => {
   });
 
   useEffect(() => {
+    setSelectedPropiedadId('');
+    setCargos([]);
     fetchPropiedades();
   }, [id]);
 
@@ -65,7 +67,7 @@ const CargosPage = () => {
       setFormData({
         monto: cargo.monto,
         concepto: cargo.concepto,
-        fecha_vencimiento: cargo.fecha_vencimiento
+        fecha_vencimiento: cargo.fecha_vencimiento ? cargo.fecha_vencimiento.split('T')[0] : ''
       });
     } else {
       setEditingCargo(null);
@@ -132,10 +134,13 @@ const CargosPage = () => {
   };
 
   const formatearDinero = (monto) => {
+    if (monto === undefined || monto === null || isNaN(monto)) return '$0';
     return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(monto);
   };
 
   const propiedadActual = propiedades.find(p => p.id.toString() === selectedPropiedadId);
+
+  const cargosFiltrados = cargos.filter(cargo => verPagados ? true : cargo.estado !== 'PAGADO');
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
@@ -224,19 +229,17 @@ const CargosPage = () => {
                           </div>
                       </td>
                   </tr>
-                ) : cargos.length === 0 ? (
+            ) : cargosFiltrados.length === 0 ? (
                   <tr>
                       <td colSpan="5" className="p-16 text-center">
                           <div className="flex flex-col items-center justify-center gap-2 text-gray-400">
                               <AlertCircle className="w-8 h-8 opacity-20" />
-                              <p className="text-sm font-semibold text-gray-900">No hay cargos registrados</p>
+                          <p className="text-sm font-semibold text-gray-900">No hay cargos para mostrar</p>
                           </div>
                       </td>
                   </tr>
                 ) : (
-                  cargos
-                    .filter(cargo => verPagados ? true : cargo.estado !== 'PAGADO')
-                    .map((cargo) => {
+              cargosFiltrados.map((cargo) => {
                       // 🚀 LÓGICA DE SALDO PENDIENTE
                       const totalPagado = cargo.pagos_aplicados?.reduce((acc, p) => acc + p.monto_abonado, 0) || 0;
                       const saldoPendiente = cargo.monto - totalPagado;

@@ -236,3 +236,11 @@ class CierreMensual(CierreMensualBase):
         from_attributes = True # Permite mapear desde modelos de SQLAlchemy
 
 
+class CargoUpdate(BaseModel):
+    monto: Optional[int] = None
+    concepto: Optional[str] = None
+    fecha_vencimiento: Optional[str] = None
+    estado: Optional[str] = None
+
+    class Config:
+        from_attributes = True

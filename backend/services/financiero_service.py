@@ -1,209 +1,167 @@
+# backend/services/financiero_service.py
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime, date
-from models import Transaccion, Cargo, DetallePago 
+from datetime import datetime
+import models  # <--- Usaremos este como base
 import schemas
 
-# --- 1. CONSULTAS DE LISTADO (Para que React dibuje la tabla) ---
+# --- 1. CONSULTAS DE LISTADO ---
 
-def obtener_transacciones_comunidad(
-    db: Session, 
-    comunidad_id: int, 
-    mes: int = None, 
-    anio: int = None, 
-    skip: int = 0, 
-    limit: int = 20
-):
-    """
-    Trae el historial filtrado por mes/año y paginado.
-    """
-    query = db.query(Transaccion).filter(Transaccion.comunidad_id == comunidad_id)
+def obtener_transacciones_comunidad(db: Session, comunidad_id: int, mes: int = None, anio: int = None, skip: int = 0, limit: int = 20):
+    query = db.query(models.Transaccion).filter(models.Transaccion.comunidad_id == comunidad_id)
     
     if mes:
-        query = query.filter(extract('month', Transaccion.fecha) == mes)
+        query = query.filter(extract('month', models.Transaccion.fecha) == mes)
     if anio:
-        query = query.filter(extract('year', Transaccion.fecha) == anio)
+        query = query.filter(extract('year', models.Transaccion.fecha) == anio)
         
     total_registros = query.count()
+    transacciones = query.order_by(models.Transaccion.fecha_creacion.desc()).offset(skip).limit(limit).all()
     
-    transacciones = query.order_by(Transaccion.fecha_creacion.desc()).offset(skip).limit(limit).all()
-    
-    return {
-        "total": total_registros,
-        "items": transacciones
-    }
+    return {"total": total_registros, "items": transacciones}
 
-def crear_transaccion_general(
+def crear_transaccion_general(db: Session, comunidad_id: int, tipo: str, monto_total: float, metodo_pago: str, descripcion: str, categoria: str, fecha: str = None, propiedad_id: int = None, comprobante_url: str = None):
+    fecha_final = fecha if fecha else datetime.now().date().isoformat()
+    nueva_t = models.Transaccion( # <--- Agregado models.
+        comunidad_id=comunidad_id, tipo=tipo, monto_total=monto_total,
+        metodo_pago=metodo_pago, descripcion=descripcion, categoria=categoria,
+        fecha=fecha_final, propiedad_id=propiedad_id, comprobante_url=comprobante_url
+    )
+    try:
+        db.add(nueva_t) 
+        db.flush() 
+        return nueva_t
+    except Exception as e:
+        print(f"Error al preparar transacción: {e}")
+        raise e
+
+
+def registrar_transaccion_y_pagar_cargos(
     db: Session, 
-    comunidad_id: int, 
     tipo: str, 
-    monto_total: float, # Cambiado a float por precisión financiera
+    monto_total: float, 
     metodo_pago: str, 
     descripcion: str, 
     categoria: str, 
-    fecha: str = None,
+    comunidad_id: int, 
+    fecha: str, 
     propiedad_id: int = None, 
     comprobante_url: str = None
 ):
     """
-    Crea un registro de transacción básico en la base de datos.
-    Si no se proporciona fecha, utiliza la fecha actual del sistema.
-    """
-    
-    # Si la fecha no viene del frontend, generamos la fecha actual en formato ISO (YYYY-MM-DD)
-    fecha_final = fecha if fecha else datetime.now().date().isoformat()
-
-    nueva_t = Transaccion(
-        comunidad_id=comunidad_id,
-        tipo=tipo,
-        monto_total=monto_total,
-        metodo_pago=metodo_pago,
-        descripcion=descripcion,
-        categoria=categoria,
-        fecha=fecha_final, # Asignamos la fecha procesada
-        propiedad_id=propiedad_id,
-        comprobante_url=comprobante_url
-    )
-    
-    try:
-        db.add(nueva_t)
-        db.commit()
-        db.refresh(nueva_t)
-        return nueva_t
-    except Exception as e:
-        db.rollback()
-        print(f"Error en base de datos: {e}")
-        raise e
-
-def registrar_transaccion_y_pagar_cargos(db: Session, transaccion: schemas.TransaccionCreate):
-    """
     Registra un PAGO y aplica lógica FIFO para saldar deudas pendientes.
+    Acepta datos directos de Form/Multipart.
     """
-    # 1. Creamos el movimiento general (Llamada corregida con parámetros sueltos)
-    pago = crear_transaccion_general(
-        db=db,
-        comunidad_id=transaccion.comunidad_id,
-        tipo=transaccion.tipo,
-        monto_total=transaccion.monto_total,
-        metodo_pago=transaccion.metodo_pago,
-        descripcion=transaccion.descripcion,
-        categoria=transaccion.categoria,
-        fecha=transaccion.fecha,
-        propiedad_id=transaccion.propiedad_id,
-        comprobante_url=None # Los pagos rápidos por ahora no llevan archivo aquí
-    )
-    
-    # 2. Si es un ingreso a una propiedad, saldamos deudas (FIFO)
-    if (getattr(transaccion.tipo, 'value', transaccion.tipo)) == 'INGRESO':
-        if transaccion.propiedad_id:
-            cargos_pendientes = db.query(Cargo).filter(
-                Cargo.propiedad_id == transaccion.propiedad_id,
-                Cargo.estado != schemas.EstadoCargo.PAGADO
-            ).order_by(Cargo.fecha_vencimiento.asc()).all()
+    try:
+        print(f"--- INICIANDO REGISTRO DE {tipo} ---")
+        
+        # 1. Creamos el movimiento general llamando a la función auxiliar
+        # Aquí pasamos los valores, NO las definiciones de tipo
+        pago = crear_transaccion_general(
+            db=db,
+            comunidad_id=comunidad_id,
+            tipo=tipo,
+            monto_total=monto_total,
+            metodo_pago=metodo_pago,
+            descripcion=descripcion,
+            categoria=categoria,
+            fecha=fecha,
+            propiedad_id=propiedad_id,
+            comprobante_url=comprobante_url
+        )
+        
+        # Aseguramos que el objeto tenga ID antes de seguir
+        db.flush() 
+        print(f"DEBUG: Transacción preparada con ID temporal: {pago.id}")
+
+        # Normalizamos para la comparación
+        tipo_str = str(tipo).upper()
+
+        # 2. Lógica de Descuento de Deudas
+        if tipo_str == 'INGRESO' and propiedad_id:
+            print(f"DEBUG: Procesando abonos para propiedad {propiedad_id}")
             
-            monto_disponible = pago.monto_total
+            cargos_pendientes = db.query(models.Cargo).filter(
+                models.Cargo.propiedad_id == propiedad_id,
+                models.Cargo.estado.in_(['PENDIENTE', 'PARCIAL'])
+            ).order_by(models.Cargo.fecha_vencimiento.asc()).all()
+            
+            monto_disponible = float(monto_total)
             
             for cargo in cargos_pendientes:
-                if monto_disponible <= 0:
+                if monto_disponible <= 0: 
                     break
                 
-                # Calculamos cuánto falta para completar este cargo
-                pagado_historico = db.query(func.sum(DetallePago.monto_abonado)).filter(
-                    DetallePago.cargo_id == cargo.id
+                # Calculamos cuánto se ha pagado de este cargo sumando DetallePago
+                pagado_actual = db.query(func.sum(models.DetallePago.monto_abonado)).filter(
+                    models.DetallePago.cargo_id == cargo.id
                 ).scalar() or 0
                 
-                falta_por_pagar = cargo.monto - pagado_historico
+                falta_por_pagar = float(cargo.monto) - float(pagado_actual)
+                
+                if falta_por_pagar <= 0: 
+                    continue 
+                
                 abono = min(monto_disponible, falta_por_pagar)
                 
                 if abono > 0:
-                    # Registramos el detalle del abono
-                    nuevo_detalle = DetallePago(
+                    nuevo_detalle = models.DetallePago(
                         transaccion_id=pago.id,
                         cargo_id=cargo.id,
-                        monto_abonado=abono
+                        monto_abonado=int(abono)
                     )
                     db.add(nuevo_detalle)
                     
                     # Actualizamos estado del cargo
-                    if abono >= falta_por_pagar:
-                        cargo.estado = schemas.EstadoCargo.PAGADO
-                    else:
-                        cargo.estado = schemas.EstadoCargo.PARCIAL
-                        
+                    cargo.estado = 'PAGADO' if abono >= falta_por_pagar else 'PARCIAL'
                     monto_disponible -= abono
-            
-            db.commit()
-            
-    return pago
+                    print(f"DEBUG: Abonados {abono} al cargo {cargo.id}. Nuevo estado: {cargo.estado}")
 
-# --- 3. GESTIÓN DE DEUDAS (Cargos) ---
-
-def crear_cargo(db: Session, cargo: schemas.CargoCreate):
-    """Emite una nueva deuda a una propiedad."""
-    nuevo_cargo = Cargo(
-        monto=cargo.monto,
-        concepto=cargo.concepto,
-        fecha_emision=cargo.fecha_emision or datetime.now(),
-        fecha_vencimiento=cargo.fecha_vencimiento,
-        estado=schemas.EstadoCargo.PENDIENTE,
-        propiedad_id=cargo.propiedad_id
-    )
-    db.add(nuevo_cargo)
-    db.commit()
-    db.refresh(nuevo_cargo)
-    return nuevo_cargo
-
-def obtener_cargos_pendientes_por_propiedad(db: Session, propiedad_id: int):
-    """Obtiene deudas enviando el saldo real restante a React."""
-    cargos = db.query(Cargo).filter(
-        Cargo.propiedad_id == propiedad_id,
-        Cargo.estado != schemas.EstadoCargo.PAGADO
-    ).order_by(Cargo.fecha_vencimiento.asc()).all()
-
-    resultados = []
-    for cargo in cargos:
-        pagado = db.query(func.sum(DetallePago.monto_abonado)).filter(
-            DetallePago.cargo_id == cargo.id
-        ).scalar() or 0
+        # 3. GUARDADO FÍSICO
+        print("DEBUG: Ejecutando db.commit()...")
+        db.commit()
         
-        resultados.append({
-            "id": cargo.id,
-            "monto": cargo.monto - pagado,
-            "concepto": cargo.concepto,
-            "fecha_emision": cargo.fecha_emision,
-            "fecha_vencimiento": cargo.fecha_vencimiento,
-            "estado": cargo.estado,
-            "propiedad_id": cargo.propiedad_id
-        })
-    return resultados
+        db.refresh(pago)
+        print(f"✅ ÉXITO: Transacción {pago.id} guardada permanentemente.")
+        
+        return pago
 
+    except Exception as e:
+        db.rollback()
+        print(f"❌ FALLO CRÍTICO EN EL PROCESO: {str(e)}")
+        raise e
 # --- 4. BALANCE Y ELIMINACIÓN ---
 
 def obtener_balance_comunidad(db: Session, comunidad_id: int):
-    """Calcula totales globales de la comunidad."""
-    ingresos = db.query(func.sum(Transaccion.monto_total)).filter(
-        Transaccion.comunidad_id == comunidad_id,
-        Transaccion.tipo == 'INGRESO'
+    ingresos = db.query(func.sum(models.Transaccion.monto_total)).filter( # <--- Agregado models.
+        models.Transaccion.comunidad_id == comunidad_id,
+        models.Transaccion.tipo == 'INGRESO'
     ).scalar() or 0
 
-    egresos = db.query(func.sum(Transaccion.monto_total)).filter(
-        Transaccion.comunidad_id == comunidad_id,
-        Transaccion.tipo == 'EGRESO'
+    egresos = db.query(func.sum(models.Transaccion.monto_total)).filter( # <--- Agregado models.
+        models.Transaccion.comunidad_id == comunidad_id,
+        models.Transaccion.tipo == 'EGRESO'
     ).scalar() or 0
+
+    cargos_pendientes = db.query(models.Cargo).filter( # <--- Agregado models.
+        models.Cargo.propiedad_id.in_(
+            db.query(models.Propiedad.id).filter(models.Propiedad.comunidad_id == comunidad_id)
+        ),
+        models.Cargo.estado.in_(['PENDIENTE', 'PARCIAL'])
+    ).all()
+
+    monto_total_deuda = sum(c.monto for c in cargos_pendientes)
+    ids_cargos = [c.id for c in cargos_pendientes]
+    total_abonado = 0
+    if ids_cargos:
+        total_abonado = db.query(func.sum(models.DetallePago.monto_abonado)).filter( # <--- Agregado models.
+            models.DetallePago.cargo_id.in_(ids_cargos)
+        ).scalar() or 0
 
     return {
         "ingresos": ingresos,
         "egresos": egresos,
-        "balance_actual": ingresos - egresos
+        "balance_actual": ingresos - egresos,
+        "por_cobrar": float(monto_total_deuda) - float(total_abonado)
     }
-
-def eliminar_transaccion(db: Session, transaccion_id: int):
-    """Elimina una transacción y libera el saldo."""
-    db_transaccion = db.query(Transaccion).filter(Transaccion.id == transaccion_id).first()
-    if not db_transaccion:
-        raise HTTPException(status_code=404, detail="Movimiento no encontrado")
-    
-    db.delete(db_transaccion)
-    db.commit()
-    return {"message": "Eliminado con éxito"}

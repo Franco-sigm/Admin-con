@@ -147,14 +147,14 @@ const IngresosEgresosPage = () => {
         <div className="p-5 border-b flex flex-col sm:flex-row justify-between items-center gap-6 bg-gray-50/50">
             <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
                 <Calendar className="text-blue-900 ml-2" size={18} />
-                <select value={mes} onChange={(e) => setMes(parseInt(e.target.value))} className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer">
+                <select value={mes} onChange={(e) => { setMes(parseInt(e.target.value)); setPage(1); }} className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer">
                     <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
                     <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
                     <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
                     <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
                 </select>
                 <div className="w-[1px] h-4 bg-gray-200 mx-1"></div>
-                <select value={anio} onChange={(e) => setAnio(parseInt(e.target.value))} className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer">
+                <select value={anio} onChange={(e) => { setAnio(parseInt(e.target.value)); setPage(1); }} className="bg-transparent font-bold text-gray-700 outline-none cursor-pointer">
                     {añosSoportados.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
             </div>
@@ -182,6 +182,8 @@ const IngresosEgresosPage = () => {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr><td colSpan="5" className="p-10 text-center text-gray-400">Cargando transacciones...</td></tr>
+              ) : filteredTransactions.length === 0 ? (
+                <tr><td colSpan="5" className="p-10 text-center text-gray-400">No hay movimientos en este periodo.</td></tr>
               ) : filteredTransactions.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                   <td className="p-4 text-sm text-gray-500">{new Date(item.fecha).toLocaleDateString()}</td>
@@ -189,7 +191,6 @@ const IngresosEgresosPage = () => {
                   <td className={`p-4 text-right font-bold ${item.tipo === 'INGRESO' ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(item.monto_total)}</td>
                   <td className="p-4 text-center"><span className={`px-2 py-1 rounded text-[10px] font-bold ${item.tipo === 'INGRESO' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{item.tipo}</span></td>
                   <td className="p-4 text-center">
-                    {/* BOTÓN "VER" QUE ACTIVA EL VISOR */}
                     {item.comprobante_url ? (
                         <button 
                             onClick={() => setViewingFile(item.comprobante_url)} 
@@ -211,8 +212,8 @@ const IngresosEgresosPage = () => {
          {totalItems > 0 && (
               <div className="px-6 py-2 bg-gray-50 border-t border-gray-200/80">
                 <BotonPaginado
-                  page={page} 
-                  setPage={setPage} 
+                  currentPage={page} 
+                  onPageChange={setPage} 
                   totalPages={totalPages} 
                 />
               </div>
@@ -232,13 +233,13 @@ const IngresosEgresosPage = () => {
         />
       )}
 
-      {/* 5. MODAL DE VISOR DE ARCHIVOS (ESTO ERA LO QUE FALTABA) */}
+      {/* 5. MODAL DE VISOR DE ARCHIVOS */}
       {viewingFile && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden animate-fade-in">
             <div className="p-4 border-b flex justify-between items-center bg-white">
               <h3 className="font-bold text-gray-800">Visualización de Comprobante</h3>
-              <button onClick={() => setViewingFile(null)} className="p-2 hover:bg-gray-100 rounded-full">
+              <button onClick={() => setViewingFile(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                 <X size={20} />
               </button>
             </div>

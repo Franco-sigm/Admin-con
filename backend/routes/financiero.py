@@ -14,56 +14,40 @@ router = APIRouter(
     tags=["Finanzas y Pagos"]
 )
 
-@router.post("/transacciones", response_model=schemas.Transaccion, status_code=201)
-async def crear_movimiento_general(
-    comunidad_id: int = Form(...),
-    tipo: str = Form(...), 
-    monto_total: float = Form(...), 
+@router.post("/transacciones")
+def crear_movimiento(
+    tipo: str = Form(...),
+    monto_total: float = Form(...),
     metodo_pago: str = Form(...),
-    fecha: str = Form(...),
-    descripcion: Optional[str] = Form(None),
-    categoria: Optional[str] = Form("Otros"),
-    propiedad_id: Optional[int] = Form(None),
-    archivo: Optional[UploadFile] = File(None), 
-    db: Session = Depends(get_db),
-    usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual)
+    descripcion: str = Form(None),
+    categoria: str = Form(...),
+    comunidad_id: int = Form(...),
+    fecha: str = Form(None),
+    propiedad_id: int = Form(None),
+    archivo: UploadFile = File(None), # 👈 Aquí recibimos el binario
+    db: Session = Depends(get_db)
 ):
-    """Registra movimientos con soporte para comprobantes en Supabase Storage."""
-    
-    url_comprobante = None
-    
+    # 1. (Opcional) Aquí podrías guardar el archivo en disco o S3 y obtener una URL
+    comprobante_url = None
     if archivo:
-        # Validación de formatos (mantenemos tu lógica de seguridad)
-        formatos_validos = ["image/jpeg", "image/png", "image/jpg", "application/pdf"]
-        if archivo.content_type not in formatos_validos:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Archivo no permitido. Solo JPG, PNG y PDF. Recibido: {archivo.content_type}"
-            )
+        # Por ahora solo simulamos la URL, pero el archivo ya llegó al servidor
+        comprobante_url = f"uploads/{archivo.filename}"
 
-        # 2. CAMBIO DE FUNCIÓN: Ahora usamos Supabase
-        # Esta función ya se encarga de generar el nombre único y subirlo al bucket 'comprobantes'
-        url_comprobante = subir_comprobante_supabase(archivo)
-        
-        if not url_comprobante:
-            raise HTTPException(
-                status_code=500, 
-                detail="Error al subir el archivo al servidor de almacenamiento (Supabase)."
-            )
-
-    # 3. Guardado en MySQL: Se mantiene igual, pero ahora 'url_comprobante' es de Supabase
-    return financiero_service.crear_transaccion_general(
-        db=db, 
-        comunidad_id=comunidad_id,
+    # 2. Llamamos al servicio pasando los datos sueltos
+    return financiero_service.registrar_transaccion_y_pagar_cargos(
+        db=db,
         tipo=tipo,
         monto_total=monto_total,
         metodo_pago=metodo_pago,
-        fecha=fecha,
         descripcion=descripcion,
         categoria=categoria,
+        comunidad_id=comunidad_id,
+        fecha=fecha,
         propiedad_id=propiedad_id,
-        comprobante_url=url_comprobante
+        comprobante_url=comprobante_url
     )
+
+
 
 @router.post("/cargos", response_model=schemas.Cargo, status_code=201)
 def emitir_cargo(

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from routes import usuarios, comunidades, financiero, propiedades, residentes, informes, cargos, cierre
-# Importaciones locales adaptadas a tu nueva arquitectura
+
 from database import engine, Base, get_db
 import schemas
 import security

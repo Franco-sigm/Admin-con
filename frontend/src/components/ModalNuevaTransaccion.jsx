@@ -98,21 +98,38 @@ const ModalNuevaTransaccion = ({ isOpen, onClose, onSave, transactionToEdit }) =
   const handlePropiedadChange = async (e) => {
     const propId = e.target.value;
     setFormData(prev => ({ ...prev, propiedad_id: propId }));
+
     if (propId && formData.tipo === 'INGRESO') {
-       setCargandoDeuda(true);
-       try {
-          const res = await api.get(`/api/finanzas/propiedades/${propId}/deudas`);
-          let sumaDeuda = 0;
-          if (Array.isArray(res.data)) {
-              sumaDeuda = res.data.reduce((acc, cargo) => acc + (cargo.monto || 0), 0);
-          }
-          setDeudaPendiente(sumaDeuda);
-          setFormData(prev => ({ ...prev, monto: sumaDeuda > 0 ? sumaDeuda : '' }));
-       } catch(error) {
-          setDeudaPendiente(0);
-       } finally { setCargandoDeuda(false); }
-    } else { setDeudaPendiente(null); }
-  };
+        setCargandoDeuda(true);
+        try {
+            // 1. Usamos la NUEVA ruta unificada que creamos en el backend
+            const res = await api.get(`/api/cargos/propiedad/${propId}`);
+            
+            let sumaSaldoReal = 0;
+            if (Array.isArray(res.data)) {
+                // 2. ⚡ CLAVE: Sumamos el SALDO, no el MONTO
+                // Esto hará que si debía 100 y pagó 60, aquí aparezcan 40.
+                sumaSaldoReal = res.data.reduce((acc, cargo) => acc + (cargo.saldo || 0), 0);
+            }
+            
+            setDeudaPendiente(sumaSaldoReal);
+            
+            // Sugerimos el monto a pagar basado en el saldo real
+            setFormData(prev => ({ 
+                ...prev, 
+                monto: sumaSaldoReal > 0 ? sumaSaldoReal : '' 
+            }));
+
+        } catch(error) {
+            console.error("Error al obtener deuda real:", error);
+            setDeudaPendiente(0);
+        } finally { 
+            setCargandoDeuda(false); 
+        }
+    } else { 
+        setDeudaPendiente(null); 
+    }
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
