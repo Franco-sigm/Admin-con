@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import models
 import schemas
+from sqlalchemy import func
 
 def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
     # Verificamos si ya existe el "Depto 402" en esta comunidad específica
@@ -27,15 +28,20 @@ def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
         raise HTTPException(status_code=400, detail="Error de integridad en la base de datos.")
 
 def obtener_propiedades_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 20):
-    # 1. Contamos el total real de propiedades en esa comunidad
-    total = db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).count()
-    
-    # 2. Traemos solo el "pedacito" de la página actual
-    propiedades = db.query(models.Propiedad).filter(
+    query = db.query(models.Propiedad).filter(
         models.Propiedad.comunidad_id == comunidad_id
+    )
+
+    total = query.count()
+    
+    # ORDENAMIENTO NATURAL:
+    # 1. Ordena por el largo del texto (pone los números cortos primero)
+    # 2. Ordena alfabéticamente (separa A de B)
+    propiedades = query.order_by(
+        func.length(models.Propiedad.numero_unidad).asc(),
+        models.Propiedad.numero_unidad.asc()
     ).offset(skip).limit(limit).all()
     
-    # 3. Devolvemos el diccionario con la estructura exacta que pide el esquema
     return {
         "total": total,
         "items": propiedades

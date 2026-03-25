@@ -69,20 +69,20 @@ class PropiedadesPaginadas(BaseModel):
     items: List[Propiedad]
 
 
+
+
 # ==========================================
-# 3. SCHEMAS DE RESIDENTES (Actualizado)
+# 3. SCHEMAS DE RESIDENTES Y PROPIEDAD-RESIDENTE
 # ==========================================
+
 class ResidenteBase(BaseModel):
     nombre: str
-    email: Optional[EmailStr] = None 
+    email: Optional[EmailStr] = None
     telefono: Optional[str] = None
-    es_propietario: EsPropietario = EsPropietario.NO
 
 class ResidenteCreate(ResidenteBase):
-    # VOLVEMOS a propiedad_id, porque React envía un número entero al crear
+    # Campos adicionales para creación rápida desde el padrón
     propiedad_id: Optional[int] = None 
-    
-    # Campos "mágicos" para crear la propiedad al mismo tiempo si no existe
     numero_unidad: Optional[str] = None
     prorrateo: Optional[float] = 0.0
     comunidad_id: Optional[int] = None
@@ -91,22 +91,38 @@ class ResidenteUpdate(BaseModel):
     nombre: Optional[str] = None
     email: Optional[EmailStr] = None
     telefono: Optional[str] = None
-    es_propietario: Optional[EsPropietario] = None
-    
+
 class Residente(ResidenteBase):
     id: int
+    # Eliminamos la lista de propiedades aquí para evitar recursión infinita
+    # o la dejamos como opcional si es necesario
     
-    #  ELIMINAMOS propiedad_id: int (ya no existe en la base de datos)
-    
-    # AGREGAMOS la lista de propiedades (Usamos comillas por si el schema Propiedad está más abajo)
-    propiedades: List["Propiedad"] = []
+    class Config:
+        from_attributes = True
+
+# --- ESQUEMAS PARA LA PAGINACIÓN POR UNIDADES ---
+
+class PropiedadConResidentes(BaseModel):
+    """
+    Este es el esquema que resuelve el Error 500.
+    Representa una fila de la tabla: Una Propiedad con sus Residentes dentro.
+    """
+    id: int
+    numero_unidad: str
+    prorrateo: float
+    comunidad_id: int
+    # Aquí cargamos los residentes vinculados a esta propiedad específica
+    residentes: List[Residente] = []
 
     class Config:
         from_attributes = True
 
 class ResidentesPaginados(BaseModel):
+    """
+    El response_model que usa la ruta /api/residentes/comunidad/{id}
+    """
     total: int
-    items: List[Residente]
+    items: List[PropiedadConResidentes] # La lista ahora es de Propiedades
 
 
 # ==========================================

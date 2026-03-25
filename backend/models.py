@@ -4,6 +4,16 @@ from database import Base
 from sqlalchemy.sql import func
 from datetime import date, datetime 
 
+
+# tabla intermediaruia para la relación muchos a muchos entre Residentes y Propiedades 
+
+residente_propiedad = Table(
+    'residente_propiedad',
+    Base.metadata,
+    Column('residente_id', Integer, ForeignKey('residentes.id', ondelete="CASCADE"), primary_key=True),
+    Column('propiedad_id', Integer, ForeignKey('propiedades.id', ondelete="CASCADE"), primary_key=True)
+)
+
 # 1. TABLA COMUNIDADES (Sin cambios mayores)
 class Comunidad(Base):
     __tablename__ = "comunidades"
@@ -36,14 +46,8 @@ class Usuario(Base):
     password_hash = Column(String(255)) 
     comunidades_creadas = relationship("Comunidad", back_populates="creador")
     rol = Column(String, default="ADMIN")
-# tabla intermediaruia para la relación muchos a muchos entre Residentes y Propiedades 
 
-residente_propiedad = Table(
-    'residente_propiedad',
-    Base.metadata,
-    Column('residente_id', Integer, ForeignKey('residentes.id', ondelete="CASCADE"), primary_key=True),
-    Column('propiedad_id', Integer, ForeignKey('propiedades.id', ondelete="CASCADE"), primary_key=True)
-)
+
 
 # ==========================================
 # LA NUEVA ARQUITECTURA FINANCIERA Y FÍSICA
@@ -69,6 +73,8 @@ class Propiedad(Base):
     transacciones = relationship("Transaccion", back_populates="propiedad")
     coeficiente = Column(Float, default=0.0)
 
+    
+
 # 4. TABLA RESIDENTES (MODIFICADA: Ahora se asocia a una Propiedad, no a un String suelto)
 class Residente(Base):
     __tablename__ = "residentes"
@@ -78,7 +84,9 @@ class Residente(Base):
     email = Column(String(150), unique=True) 
     telefono = Column(String(20), nullable=True)
     propiedades = relationship("Propiedad", secondary=residente_propiedad, back_populates="residentes")
-    
+
+
+
 
 # 5. TABLA CARGOS (NUEVA: Las Deudas o Cobros emitidos, ej: Gasto Común de Marzo)
 class Cargo(Base):

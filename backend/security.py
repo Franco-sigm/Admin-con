@@ -13,7 +13,7 @@ from services import usuario_service
 # Configuraciones de seguridad
 SECRET_KEY = os.getenv('SECRET_KEY', 'clave-super-secreta-cambiar-en-env')
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # El token dura 7 días
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8 # El token dura 8 horas
 
 # Le decimos a FastAPI dónde está la ruta de login para que arme el botón "Authorize" en Swagger
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/usuarios/login")
@@ -24,7 +24,7 @@ def crear_token_acceso(data: dict, expires_delta: Optional[timedelta] = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(hours=8)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
