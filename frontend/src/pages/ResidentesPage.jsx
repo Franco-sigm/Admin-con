@@ -39,7 +39,7 @@ function ResidentesPage() {
       
       // Petición al API (Los parámetros page y limit ahora cortan unidades en el SQL)
       const response = await api.get(`/api/residentes/comunidad/${id}`, {
-        params: { page, limit }
+        params: { page, limit, search: busqueda }
       });
       
       const { items, total } = response.data;
@@ -82,12 +82,28 @@ function ResidentesPage() {
     } finally {
       setCargando(false);
     }
-  }, [id, page]);
+  }, [id, page, busqueda, limit]);
 
-  useEffect(() => {
-    if (id) cargarPropiedadesYResidentes();
-  }, [cargarPropiedadesYResidentes]);
+useEffect(() => {
+  setPage(1);
+}, [busqueda]);
 
+  // NUEVO useEffect de carga con soporte para Búsqueda Global
+useEffect(() => {
+  // Creamos un temporizador (Debounce)
+  // Esto evita que se haga una petición por cada letra que escribes.
+  // Solo buscará cuando dejes de escribir por 300ms.
+  const delayDebounceFn = setTimeout(() => {
+    if (id) {
+      cargarPropiedadesYResidentes();
+    }
+  }, 300); 
+
+  // Limpiamos el temporizador si el usuario sigue escribiendo
+  return () => clearTimeout(delayDebounceFn);
+  
+  // Ahora el efecto "escucha" a: id, page y busqueda
+}, [id, page, busqueda, cargarPropiedadesYResidentes]);
   // --- VERIFICACIÓN DE UNIDAD (Evitar duplicados) ---
   useEffect(() => {
     const verificarUnidad = async () => {
@@ -166,11 +182,6 @@ function ResidentesPage() {
     }
   };
 
-  const residentesFiltrados = residentes.filter((res) => {
-    const texto = busqueda.toLowerCase();
-    return res.nombre?.toLowerCase().includes(texto) || res.numero_unidad?.toLowerCase().includes(texto);
-  });
-
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
       
@@ -237,7 +248,7 @@ function ResidentesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {residentesFiltrados.map((res, index) => (
+                  {residentes.map((res, index) => (
                     <tr key={`${res.id}-${res.propiedad_id}-${index}`} className="hover:bg-gray-50/80 transition-colors group">
                       <td className="p-4 whitespace-nowrap">
                           <div className="text-sm font-bold text-gray-900 flex items-center gap-2">

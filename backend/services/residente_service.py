@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import models
 import schemas
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCreate):
     try:
@@ -71,17 +71,27 @@ def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCre
         raise HTTPException(status_code=500, detail=f"Error en el servidor: {str(e)}")
     
 
-def obtener_residentes_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 15):
+def obtener_residentes_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 15, search: str = None):
     # 1. Consulta base sobre Propiedad
     query = db.query(models.Propiedad).filter(
         models.Propiedad.comunidad_id == comunidad_id
     )
 
+    # 2. LÓGICA DE BÚSQUEDA GLOBAL
+    if search:
+        search_filter = f"%{search}%"
+        # Unimos con residentes para poder buscar por nombre
+        query = query.join(models.Propiedad.residentes).filter(
+            or_(
+                models.Propiedad.numero_unidad.ilike(search_filter),
+                models.Residente.nombre.ilike(search_filter)
+            )
+        ).distinct() # Evita duplicar filas si hay varios residentes en una unidad
+
+    # 3. Contamos el total FILTRADO (esto actualiza la paginación automáticamente)
     total = query.count()
 
-    # 2. ORDENAMIENTO NATURAL (Soporta números y letras como 101-A)
-    # Primero ordena por el largo del texto para que "2" vaya antes que "10"
-    # Luego ordena alfabéticamente para que "108-A" vaya antes que "108-B"
+    # 4. Traemos los datos con el ordenamiento natural que ya teníamos
     items = query.options(
         joinedload(models.Propiedad.residentes)
     ).order_by(

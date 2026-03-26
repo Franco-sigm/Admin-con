@@ -35,18 +35,12 @@ def listar_residentes(
     comunidad_id: int,
     page: int = 1,
     limit: int = 15,
+    search: str = None, # <-- FastAPI lee ?search=... desde aquí
     db: Session = Depends(get_db)
 ):
-    """
-    Lista residentes con paginación real. 
-    El cálculo del 'skip' se hace aquí para mantener el servicio agnóstico a HTTP.
-    """
     skip = (page - 1) * limit
     return residente_service.obtener_residentes_por_comunidad(
-        db=db, 
-        comunidad_id=comunidad_id, 
-        skip=skip, 
-        limit=limit
+        db, comunidad_id, skip, limit, search
     )
 
 @router.delete("/{residente_id}", status_code=204)

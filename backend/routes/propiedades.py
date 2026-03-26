@@ -29,16 +29,14 @@ def listar_propiedades(
     comunidad_id: int,
     page: int = 1,
     limit: int = 20,
+    search: str = None, # <-- Parámetro para la búsqueda global
     db: Session = Depends(get_db)
 ):
-    """
-    Obtiene las propiedades de una comunidad con paginación.
-    """
-    # Calculamos cuántos registros saltar
     skip = (page - 1) * limit
-    
-    # Llamamos al servicio
-    return propiedad_service.obtener_propiedades_por_comunidad(db, comunidad_id, skip, limit)
+    return propiedad_service.obtener_propiedades_por_comunidad(
+        db, comunidad_id, skip, limit, search
+    )
+
 @router.delete("/{propiedad_id}", status_code=204)
 def eliminar_propiedad(
     propiedad_id: int,

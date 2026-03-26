@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import models
 import schemas
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
     # Verificamos si ya existe el "Depto 402" en esta comunidad específica
@@ -27,16 +27,21 @@ def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
         db.rollback()
         raise HTTPException(status_code=400, detail="Error de integridad en la base de datos.")
 
-def obtener_propiedades_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 20):
+def obtener_propiedades_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 20, search: str = None):
+    # 1. Consulta base
     query = db.query(models.Propiedad).filter(
         models.Propiedad.comunidad_id == comunidad_id
     )
 
+    # 2. Aplicar filtro de búsqueda si existe
+    if search:
+        query = query.filter(
+            models.Propiedad.numero_unidad.ilike(f"%{search}%")
+        )
+
     total = query.count()
     
-    # ORDENAMIENTO NATURAL:
-    # 1. Ordena por el largo del texto (pone los números cortos primero)
-    # 2. Ordena alfabéticamente (separa A de B)
+    # 3. Ordenamiento natural (por largo y luego texto)
     propiedades = query.order_by(
         func.length(models.Propiedad.numero_unidad).asc(),
         models.Propiedad.numero_unidad.asc()

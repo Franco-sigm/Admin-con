@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback} from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client'; 
 import BotonPaginado from '../components/BotonPaginado';
-import { Home, Edit2, Trash2, Plus, Building, X, Percent } from 'lucide-react'; 
+import { Home, Edit2, Trash2, Plus, Building, X, Percent, Search,  } from 'lucide-react'; 
 
 const PropiedadesPage = () => {
   const { id } = useParams(); 
   
-  // Estados principales
+  // 1. Estados de datos (Cambiamos 'loading' a 'cargando' para ser consistentes con Residentes)
   const [propiedades, setPropiedades] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Estados para el Modal y Formulario
+  const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
+
+  // 2. Estados de Paginación (Sincronizados con el Backend)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const limit = 20; // En propiedades solemos mostrar un poco más por página
+
+  // 3. Estados para el Modal y Formulario
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPropiedad, setEditingPropiedad] = useState(null);
   const [formData, setFormData] = useState({
@@ -19,25 +26,19 @@ const PropiedadesPage = () => {
     prorrateo: '' 
   });
 
-  // Estados de Paginación
-  const limit = 15;
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-
-  useEffect(() => {
-    fetchPropiedades();
-  }, [id, currentPage]);
-
-  const fetchPropiedades = async () => {
+  // --- FUNCIÓN DE CARGA CON BÚSQUEDA GLOBAL ---
+  const cargarPropiedades = useCallback(async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token'); 
-      const response = await api.get(`/api/propiedades/comunidad/${id}?page=${currentPage}&limit=${limit}`, {
-        headers: { Authorization: `Bearer ${token}` } 
+      setCargando(true);
+      const response = await api.get(`/api/propiedades/comunidad/${id}`, {
+        params: { 
+          page, 
+          limit, 
+          search: busqueda // Enviamos la búsqueda al servidor
+        }
       });
       
-      const { total, items } = response.data;
+      const { items, total } = response.data;
       setPropiedades(items || []);
       setTotalItems(total || 0);
       setTotalPages(Math.ceil((total || 0) / limit) || 1);
@@ -45,9 +46,23 @@ const PropiedadesPage = () => {
     } catch (error) {
       console.error("Error cargando propiedades:", error);
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
-  };
+  }, [id, page, busqueda, limit]);
+
+  // 4. Resetear a página 1 cuando el usuario busca algo nuevo
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda]);
+
+  // 5. useEffect con Debounce para evitar saturar el server
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (id) cargarPropiedades();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [id, page, busqueda, cargarPropiedades]);
 
   const handleOpenModal = (propiedad = null) => {
     if (propiedad) {
@@ -66,13 +81,16 @@ const PropiedadesPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.numero || !formData.prorrateo) {
+    // 1. Validación básica (incluyendo que el prorrateo sea un número válido)
+    if (!formData.numero || formData.prorrateo === '') {
       alert("Todos los campos son obligatorios");
       return;
     }
 
+    // 2. Preparación del Payload
     const payload = {
-      numero_unidad: formData.numero.toString(), 
+      // Usamos .trim() para evitar espacios accidentales en el número de unidad
+      numero_unidad: formData.numero.toString().trim(), 
       prorrateo: parseFloat(formData.prorrateo),
       comunidad_id: parseInt(id)
     };
@@ -84,17 +102,24 @@ const PropiedadesPage = () => {
       };
 
       if (editingPropiedad) {
+        // EDICIÓN
         await api.put(`/api/propiedades/${editingPropiedad.id}`, payload, config);
         alert("✅ Propiedad actualizada");
       } else {
+        // CREACIÓN
         await api.post('/api/propiedades', payload, config);
         alert("✅ Propiedad creada");
       }
-      setIsModalOpen(false);
-      fetchPropiedades(); 
+
+      // 3. Post-guardado: Cerrar modal y refrescar la lista con los nuevos datos
+      cerrarModal();
+      cargarPropiedades(); 
+
     } catch (error) {
       console.error("Error al guardar:", error);
-      alert("Hubo un error al guardar la propiedad.");
+      // Extraer mensaje de error del backend si existe
+      const mensajeError = error.response?.data?.detail || "Hubo un error al guardar la propiedad.";
+      alert(` ${mensajeError}`);
     }
   };
 
@@ -110,10 +135,10 @@ const PropiedadesPage = () => {
       });
       alert("🗑️ Propiedad eliminada");
       
-      if (propiedades.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
+      if (propiedades.length === 1 && page > 1) {
+        setPage(page - 1);
       } else {
-        fetchPropiedades();
+        cargarPropiedades();
       }
       
     } catch (error) {
@@ -121,6 +146,30 @@ const PropiedadesPage = () => {
       alert("No se pudo eliminar. Asegúrate de que no tenga residentes o deudas asociadas.");
     }
   };
+
+  const cerrarModal = () => {
+    setIsModalOpen(false);
+    setEditingPropiedad(null);
+    setFormData({ numero: '', prorrateo: '' });
+  };
+
+  const handleInputChange = (e) => {
+  const { name, value } = e.target;
+  setFormData(prev => ({ ...prev, [name]: value }));
+};
+
+useEffect(() => {
+  setPage(1);
+}, [busqueda]);
+
+// B. Carga con Debounce (300ms)
+useEffect(() => {
+  const delayDebounceFn = setTimeout(() => {
+    if (id) cargarPropiedades();
+  }, 300);
+
+  return () => clearTimeout(delayDebounceFn);
+}, [id, page, busqueda, cargarPropiedades]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
@@ -136,6 +185,20 @@ const PropiedadesPage = () => {
           </h1>
           <p className="text-gray-500 text-sm mt-2">Configura las unidades, departamentos y sus porcentajes de copropiedad.</p>
         </div>
+
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text"
+            placeholder="Buscar por unidad..."
+            value={busqueda} // <--- Conectado al estado
+            onChange={(e) => setBusqueda(e.target.value)} // <--- Actualiza el estado
+            className="pl-10 pr-4 py-2 border rounded-lg ..." 
+          />
+      </div>
+
+        
         <button 
           onClick={() => handleOpenModal()}
           className="w-full md:w-auto bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl shadow-md shadow-gray-900/20 transition-all duration-200 flex items-center justify-center gap-2 font-medium active:scale-95 whitespace-nowrap"
@@ -147,7 +210,7 @@ const PropiedadesPage = () => {
 
       {/* --- TABLA PRINCIPAL --- */}
       <div className="bg-gradient-to-b from-white to-gray-50/80 rounded-2xl border border-gray-200/80 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] shadow-[inset_0_1px_0_rgba(255,255,255,1)] overflow-hidden flex flex-col">
-        {loading ? (
+        {cargando ? (
            <div className="p-16 flex flex-col items-center justify-center text-gray-400">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-3"></div>
               <p className="text-sm font-medium animate-pulse">Cargando propiedades...</p>
@@ -217,8 +280,8 @@ const PropiedadesPage = () => {
             {totalItems > 0 && (
               <div className="px-6 py-2 bg-gray-50 border-t border-gray-200/80">
                 <BotonPaginado
-                  page={currentPage} 
-                  setPage={setCurrentPage} 
+                  page={page} 
+                  setPage={setPage} 
                   totalPages={totalPages} 
                 />
               </div>
@@ -237,7 +300,7 @@ const PropiedadesPage = () => {
                  <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
                  {editingPropiedad ? 'Editar Propiedad' : 'Nueva Propiedad'}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-200/50">
+              <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-200/50">
                  <X className="w-5 h-5"/>
               </button>
             </div>
@@ -251,11 +314,12 @@ const PropiedadesPage = () => {
                         <Home className="h-4 w-4 text-gray-400" />
                     </div>
                     <input 
+                      name="numero"
                       type="text" required autoFocus
                       placeholder="Ej: 101, Casa 5..."
                       className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                       value={formData.numero}
-                      onChange={(e) => setFormData({...formData, numero: e.target.value})}
+                      onChange={handleInputChange}
                     />
                 </div>
               </div>
@@ -267,11 +331,12 @@ const PropiedadesPage = () => {
                         <Percent className="h-4 w-4 text-gray-400" />
                     </div>
                     <input 
+                      name="prorrateo"
                       type="number" step="0.000001" required
                       placeholder="Ej: 0.025"
                       className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-bold font-mono text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                       value={formData.prorrateo}
-                      onChange={(e) => setFormData({...formData, prorrateo: e.target.value})}
+                      onChange={handleInputChange}
                     />
                 </div>
                 <p className="text-[11px] text-gray-500 mt-1 font-medium">
@@ -282,7 +347,7 @@ const PropiedadesPage = () => {
               <div className="pt-4 flex gap-3 border-t border-gray-100">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)} 
+                  onClick={cerrarModal} 
                   className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
