@@ -53,3 +53,12 @@ def eliminar_residente_route(
     Elimina un residente. El servicio se encarga de la lógica de DB.
     """
     return residente_service.eliminar_residente(db=db, residente_id=residente_id)
+
+
+@router.post("/comunidad/{comunidad_id}/importar")
+def importar_residentes(
+    comunidad_id: int, 
+    datos: List[schemas.ResidenteImport], 
+    db: Session = Depends(get_db)
+):
+    return residente_service.importar_residentes_masivo(db, comunidad_id, datos)

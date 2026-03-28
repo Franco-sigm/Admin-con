@@ -264,3 +264,11 @@ class CargoUpdate(BaseModel):
 
     class Config:
         from_attributes = True
+
+# SCHEMA PARA IMPORTAR RESIDENTES DESDE EXCEL (¡NUEVO!)
+class ResidenteImport(BaseModel):
+    numero_unidad: str
+    nombre: str
+    email: Optional[EmailStr] = None
+    telefono: Optional[str] = None
+    prorrateo: Optional[float] = 0.0

@@ -4,8 +4,11 @@ from fastapi import HTTPException
 import models
 import schemas
 from sqlalchemy import func, or_
+from typing import List
 
-def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCreate):
+# En services/residente_service.py
+
+def crear_residente(db: Session, residente_in: schemas.ResidenteCreate):
     try:
         propiedad = None
         
@@ -14,26 +17,33 @@ def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCre
             propiedad = db.get(models.Propiedad, residente_in.propiedad_id)
         
         elif residente_in.numero_unidad and residente_in.comunidad_id:
-            # Buscamos si la unidad ya existe en esta comunidad específica
             propiedad = db.query(models.Propiedad).filter(
                 models.Propiedad.numero_unidad == residente_in.numero_unidad,
                 models.Propiedad.comunidad_id == residente_in.comunidad_id
             ).first()
             
             if not propiedad:
-                # Si no existe, la creamos (Lógica de "Alta rápida")
                 propiedad = models.Propiedad(
                     numero_unidad=residente_in.numero_unidad,
                     comunidad_id=residente_in.comunidad_id,
                     prorrateo=residente_in.prorrateo or 0.0
                 )
                 db.add(propiedad)
-                db.flush() # Flush para tener el ID disponible para la relación
+                db.flush()
 
         if not propiedad:
             raise HTTPException(status_code=400, detail="No se pudo determinar la propiedad.")
 
-        # 2. Gestión del residente (Evitar duplicados)
+        # --- NUEVA LÓGICA DE SUSTITUCIÓN ---
+        # Antes de crear o asignar al nuevo, desactivamos a cualquier residente 
+        # que esté actualmente activo en esta propiedad específica.
+        db.query(models.Residente).join(models.Residente.propiedades).filter(
+            models.Propiedad.id == propiedad.id,
+            models.Residente.activo == 1
+        ).update({"activo": 0}, synchronize_session=False)
+        # -----------------------------------
+
+        # 2. Gestión del residente (Evitar duplicados por email)
         residente_db = None
         if residente_in.email:
             residente_db = db.query(models.Residente).filter(
@@ -44,17 +54,20 @@ def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCre
             residente_db = models.Residente(
                 nombre=residente_in.nombre,
                 email=residente_in.email,
-                telefono=residente_in.telefono
+                telefono=residente_in.telefono,
+                activo=1 # Aseguramos que el nuevo entre como activo
             )
             db.add(residente_db)
             db.flush()
         else:
-            # OPCIONAL: Actualizar el teléfono si el residente ya existía pero cambió
+            # Si el residente ya existía en la DB, lo activamos y actualizamos datos
+            residente_db.activo = 1 
             if residente_in.telefono:
                 residente_db.telefono = residente_in.telefono
+            if residente_in.nombre:
+                residente_db.nombre = residente_in.nombre
 
-        # 3. Vinculación Many-to-Many (La clave del control)
-        # SQLAlchemy detecta la tabla intermedia 'residente_propiedad' automáticamente
+        # 3. Vinculación Many-to-Many
         if propiedad not in residente_db.propiedades:
             residente_db.propiedades.append(propiedad)
 
@@ -64,16 +77,12 @@ def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCre
 
     except Exception as e:
         db.rollback()
-        # Log técnico para el flujo de trabajo
         print(f" Error en registrar_residente_completo: {str(e)}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=f"Error en el servidor: {str(e)}")
-    
 
-# services/residente_service.py
 
-# services/residente_service.py
 
 def obtener_residentes_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 15, search: str = None):
     # 1. Consulta base con carga de relación (Eager Loading)
@@ -135,3 +144,29 @@ def eliminar_residente(db: Session, residente_id: int):
             
     return False
 
+# NUEVO SERVICIO PARA IMPORTACIÓN MASIVA DESDE EXCEL
+def importar_residentes_masivo(db: Session, comunidad_id: int, datos: List[schemas.ResidenteImport]):
+    resumen = {"creados": 0, "errores": 0}
+    
+    for item in datos:
+        try:
+            # Convertimos el item de importación al esquema que ya valida el Service
+            residente_in = schemas.ResidenteCreate(
+                nombre=item.nombre,
+                email=item.email,
+                telefono=item.telefono,
+                numero_unidad=item.numero_unidad,
+                comunidad_id=comunidad_id,
+                prorrateo=item.prorrateo
+            )
+            
+            # Reutilizamos la lógica que ya limpia duplicados y vincula
+            crear_residente(db, residente_in)
+            resumen["creados"] += 1
+            
+        except Exception as e:
+            print(f"Error importando unidad {item.numero_unidad}: {e}")
+            resumen["errores"] += 1
+            continue # Si una fila falla, seguimos con la siguiente
+            
+    return resumen

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import api from '../api/client'; 
 import BotonPaginado from '../components/BotonPaginado'; 
 import { Users, Search, Plus, Edit2, Trash2, Home, Mail, Phone, Percent, AlertCircle, X, User } from 'lucide-react';
+import ImportarResidentesModal from '../components/ImportarResidentesModal';
 
 const INITIAL_FORM_STATE = {
   id: null,
@@ -23,6 +24,7 @@ function ResidentesPage() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [formResidente, setFormResidente] = useState(INITIAL_FORM_STATE);
   const [unidadExistente, setUnidadExistente] = useState(null);
+  const [mostrarModalImport, setMostrarModalImport] = useState(false); // Nuevo estado para el modal de importación
   
   // Estados de Paginación (Sincronizados con el Backend)
   const [page, setPage] = useState(1);
@@ -184,6 +186,8 @@ const handleAsignar = (propiedadId) => {
     }
   };
 
+
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
       
@@ -200,6 +204,9 @@ const handleAsignar = (propiedadId) => {
         </div>
       </div>
 
+      
+      
+
       {/* BARRA DE HERRAMIENTAS */}
       <div className="bg-gradient-to-b from-white to-gray-50/80 p-5 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col md:flex-row items-center gap-4 justify-between">
         <div className="relative w-full md:w-80 group">
@@ -213,6 +220,16 @@ const handleAsignar = (propiedadId) => {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
+        </div>
+
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setMostrarModalImport(true)}
+            className="px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Importar CSV
+          </button>
         </div>
 
        
@@ -460,6 +477,16 @@ const handleAsignar = (propiedadId) => {
           </div>
         </div>
       )}
+
+      {/* MODAL DE IMPORTACIÓN MASIVA */}
+      <ImportarResidentesModal 
+        isOpen={mostrarModalImport}
+        onClose={() => setMostrarModalImport(false)}
+        comunidadId={id}
+        onImportSuccess={cargarPropiedadesYResidentes}
+       />
+
+
     </div>
   );
 }
