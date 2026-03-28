@@ -64,3 +64,17 @@ def eliminar_propiedad(db: Session, propiedad_id: int):
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="No se puede eliminar esta propiedad porque tiene residentes o deudas asociadas.")
+    
+
+
+def actualizar_propiedad(db: Session, propiedad_id: int, propiedad_in: schemas.PropiedadUpdate):
+    db_propiedad = db.query(models.Propiedad).filter(models.Propiedad.id == propiedad_id).first()
+    if db_propiedad:
+        # Actualizamos solo los campos enviados
+        update_data = propiedad_in.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_propiedad, key, value)
+        
+        db.commit()
+        db.refresh(db_propiedad)
+    return db_propiedad

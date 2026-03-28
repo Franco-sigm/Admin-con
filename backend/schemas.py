@@ -54,6 +54,7 @@ class PropiedadBase(BaseModel):
     prorrateo: float = 0.0
     comunidad_id: Optional[int] = None # Esto se asignará al crear la propiedad, no es necesario en el update
 
+
 class PropiedadCreate(PropiedadBase):
     comunidad_id: int
 
@@ -67,6 +68,11 @@ class Propiedad(PropiedadBase):
 class PropiedadesPaginadas(BaseModel):
     total: int
     items: List[Propiedad]
+
+class PropiedadUpdate(BaseModel):
+    numero_unidad: Optional[str] = None
+    prorrateo: Optional[float] = None
+   
 
 
 

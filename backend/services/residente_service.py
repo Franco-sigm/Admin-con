@@ -34,14 +34,22 @@ def crear_residente(db: Session, residente_in: schemas.ResidenteCreate):
         if not propiedad:
             raise HTTPException(status_code=400, detail="No se pudo determinar la propiedad.")
 
-        # --- NUEVA LÓGICA DE SUSTITUCIÓN ---
-        # Antes de crear o asignar al nuevo, desactivamos a cualquier residente 
-        # que esté actualmente activo en esta propiedad específica.
-        db.query(models.Residente).join(models.Residente.propiedades).filter(
+        # --- LÓGICA DE SUSTITUCIÓN CORREGIDA ---
+        # 1. Obtener IDs de residentes actualmente activos en esta propiedad
+        residentes_activos_ids = db.query(models.Residente.id).join(
+            models.Residente.propiedades
+        ).filter(
             models.Propiedad.id == propiedad.id,
             models.Residente.activo == 1
-        ).update({"activo": 0}, synchronize_session=False)
-        # -----------------------------------
+        ).all()
+
+        # 2. Si hay activos, los desactivamos por ID (evita el error de join + update)
+        if residentes_activos_ids:
+            ids = [r.id for r in residentes_activos_ids]
+            db.query(models.Residente).filter(
+                models.Residente.id.in_(ids)
+            ).update({"activo": 0}, synchronize_session=False)
+        # ---------------------------------------
 
         # 2. Gestión del residente (Evitar duplicados por email)
         residente_db = None
@@ -55,12 +63,12 @@ def crear_residente(db: Session, residente_in: schemas.ResidenteCreate):
                 nombre=residente_in.nombre,
                 email=residente_in.email,
                 telefono=residente_in.telefono,
-                activo=1 # Aseguramos que el nuevo entre como activo
+                activo=1 
             )
             db.add(residente_db)
             db.flush()
         else:
-            # Si el residente ya existía en la DB, lo activamos y actualizamos datos
+            # Reactivar y actualizar si ya existía
             residente_db.activo = 1 
             if residente_in.telefono:
                 residente_db.telefono = residente_in.telefono
@@ -77,10 +85,11 @@ def crear_residente(db: Session, residente_in: schemas.ResidenteCreate):
 
     except Exception as e:
         db.rollback()
-        print(f" Error en registrar_residente_completo: {str(e)}")
+        # Log detallado del error para depuración
+        print(f"Error en registrar_residente_completo: {str(e)}")
         if isinstance(e, HTTPException):
             raise e
-        raise HTTPException(status_code=500, detail=f"Error en el servidor: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
 

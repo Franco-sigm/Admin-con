@@ -72,6 +72,7 @@ class Propiedad(Base):
     cargos = relationship("Cargo", back_populates="propiedad")
     transacciones = relationship("Transaccion", back_populates="propiedad")
     coeficiente = Column(Float, default=0.0)
+  
 
     
 

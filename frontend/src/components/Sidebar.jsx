@@ -35,6 +35,7 @@ function Sidebar({ comunidadId, nombreComunidad = "Cargando..." }) {
     { name: 'Finanzas', path: 'finanzas', icon: Wallet },
     { name: 'Deudas', path: 'cargos', icon: FileText },
     { name: 'Reportes', path: 'reportes', icon: PieChart },
+    { name: 'Configuración', path: 'configuracion', icon: FileText },
   
   ];
 

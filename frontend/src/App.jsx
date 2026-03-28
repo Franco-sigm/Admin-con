@@ -16,7 +16,8 @@ import IngresosEgresosPage from './pages/IngresosEgresosPage'
 import CargosPage from './pages/CargosPage'
 import InformesPage from './pages/InformesPage'
 import PropiedadesPage from './pages/PropiedadesPage' 
-import ReportesPage from './pages/ReportesPage' 
+import ReportesPage from './pages/ReportesPage'
+
 
  
 // Componentes Globales
@@ -111,10 +112,10 @@ function App() {
                <RouteRR path="residentes" element={<ResidentesPage />} />
                <RouteRR path="propiedades" element={<PropiedadesPage />} />
                <RouteRR path="finanzas" element={<IngresosEgresosPage />} />
-                <RouteRR path="cargos" element={<CargosPage />} />
+               <RouteRR path="cargos" element={<CargosPage />} />
                <RouteRR path="informes" element={<InformesPage />} /> 
                <RouteRR path="reportes" element={<ReportesPage />} />
-           
+              
                
               {/* Aquí agregarás más módulos en el futuro (Conserjería, Anuncios, etc.) */}
                

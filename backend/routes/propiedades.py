@@ -47,3 +47,14 @@ def eliminar_propiedad(
     Elimina una propiedad específica por su ID.
     """
     propiedad_service.eliminar_propiedad(db=db, propiedad_id=propiedad_id)  
+
+@router.put("/{propiedad_id}", response_model=schemas.Propiedad)
+def actualizar_propiedad(
+    propiedad_id: int, 
+    propiedad_in: schemas.PropiedadUpdate, 
+    db: Session = Depends(get_db)
+):
+    db_propiedad = propiedad_service.actualizar_propiedad(db, propiedad_id, propiedad_in)
+    if not db_propiedad:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    return db_propiedad
