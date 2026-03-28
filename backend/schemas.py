@@ -79,6 +79,8 @@ class ResidenteBase(BaseModel):
     nombre: str
     email: Optional[EmailStr] = None
     telefono: Optional[str] = None
+    activo: Optional[int] = 1
+
 
 class ResidenteCreate(ResidenteBase):
     # Campos adicionales para creación rápida desde el padrón
@@ -99,6 +101,8 @@ class Residente(ResidenteBase):
     
     class Config:
         from_attributes = True
+
+
 
 # --- ESQUEMAS PARA LA PAGINACIÓN POR UNIDADES ---
 

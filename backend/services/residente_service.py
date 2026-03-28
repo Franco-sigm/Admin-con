@@ -71,33 +71,43 @@ def registrar_residente_completo(db: Session, residente_in: schemas.ResidenteCre
         raise HTTPException(status_code=500, detail=f"Error en el servidor: {str(e)}")
     
 
+# services/residente_service.py
+
+# services/residente_service.py
+
 def obtener_residentes_por_comunidad(db: Session, comunidad_id: int, skip: int = 0, limit: int = 15, search: str = None):
-    # 1. Consulta base sobre Propiedad
-    query = db.query(models.Propiedad).filter(
+    # 1. Consulta base con carga de relación (Eager Loading)
+    query = db.query(models.Propiedad).options(
+        joinedload(models.Propiedad.residentes)
+    ).filter(
         models.Propiedad.comunidad_id == comunidad_id
     )
 
-    # 2. LÓGICA DE BÚSQUEDA GLOBAL
+    # 2. Búsqueda (si existe)
     if search:
         search_filter = f"%{search}%"
-        # Unimos con residentes para poder buscar por nombre
         query = query.join(models.Propiedad.residentes).filter(
+            models.Residente.activo == 1,
             or_(
                 models.Propiedad.numero_unidad.ilike(search_filter),
                 models.Residente.nombre.ilike(search_filter)
             )
-        ).distinct() # Evita duplicar filas si hay varios residentes en una unidad
+        ).distinct()
 
-    # 3. Contamos el total FILTRADO (esto actualiza la paginación automáticamente)
+    # 3. Ordenamiento y Paginación
     total = query.count()
-
-    # 4. Traemos los datos con el ordenamiento natural que ya teníamos
-    items = query.options(
-        joinedload(models.Propiedad.residentes)
-    ).order_by(
+    items = query.order_by(
         func.length(models.Propiedad.numero_unidad).asc(),
         models.Propiedad.numero_unidad.asc()
     ).offset(skip).limit(limit).all()
+
+    # 4. FILTRO DE RESIDENTES (Punto Crítico)
+    for prop in items:
+    # Este filtro cubre: 1 (tinyint), True (boolean) y NULL (registros antiguos)
+        prop.residentes = [
+            r for r in prop.residentes 
+            if r.activo == 1 or r.activo is True or r.activo is None
+    ]
 
     return {
         "total": total,
@@ -106,12 +116,22 @@ def obtener_residentes_por_comunidad(db: Session, comunidad_id: int, skip: int =
 
 def eliminar_residente(db: Session, residente_id: int):
     """
-    Elimina al residente. La tabla intermedia se limpia sola por el CASCADE.
+    Desactiva al residente (borrado lógico) en lugar de eliminarlo físicamente.
+    Mantiene la integridad de los registros históricos en la comunidad.
     """
     db_residente = db.query(models.Residente).filter(models.Residente.id == residente_id).first()
+    
     if db_residente:
-        db.delete(db_residente)
-        db.commit()
-        return True
+        # Cambio de estado a inactivo
+        db_residente.activo = 0 
+        
+        try:
+            db.commit()
+            db.refresh(db_residente)
+            return True
+        except Exception:
+            db.rollback()
+            return False
+            
     return False
 

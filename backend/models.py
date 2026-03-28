@@ -84,6 +84,7 @@ class Residente(Base):
     email = Column(String(150), unique=True) 
     telefono = Column(String(20), nullable=True)
     propiedades = relationship("Propiedad", secondary=residente_propiedad, back_populates="residentes")
+    activo = Column(Integer, default=1) # 1 para activo, 0 para inactivo (ej: se fue de la comunidad)
 
 
 

@@ -34,55 +34,28 @@ function ResidentesPage() {
 
   // --- FUNCIÓN DE CARGA PRINCIPAL ---
   const cargarPropiedadesYResidentes = useCallback(async () => {
-    try {
-      setCargando(true);
-      
-      // Petición al API (Los parámetros page y limit ahora cortan unidades en el SQL)
-      const response = await api.get(`/api/residentes/comunidad/${id}`, {
-        params: { page, limit, search: busqueda }
-      });
-      
-      const { items, total } = response.data;
+  try {
+    setCargando(true);
+    
+    const response = await api.get(`/api/residentes/comunidad/${id}`, {
+      params: { page, limit, search: busqueda }
+    });
+    
+    const { items, total } = response.data;
 
-      // 1. Mapeamos directamente las Propiedades (ya no usamos flatMap)
-      const datosFormateados = (items || []).map(prop => {
-        // Buscamos si la propiedad tiene residentes vinculados
-        const tieneResidente = prop.residentes && prop.residentes.length > 0;
-        
-        // Si hay, tomamos el primero; si no, un objeto vacío para evitar errores
-        const res = tieneResidente ? prop.residentes[0] : null;
+    // GUARDAMOS LOS ITEMS DIRECTAMENTE
+    // Cada 'item' es una Propiedad que contiene su lista de 'residentes'
+    setResidentes(items || []); 
+    
+    setTotalItems(total || 0);
+    setTotalPages(Math.ceil((total || 0) / limit) || 1);
 
-        return {
-          // El ID principal para la tabla debe ser el del Residente (para Editar/Borrar)
-          id: res ? res.id : null, 
-          
-          // Datos de la Propiedad (Vienen en la raíz del objeto item)
-          propiedad_id: prop.id,
-          numero_unidad: prop.numero_unidad || 'N/A',
-          prorrateo: prop.prorrateo || 0,
-          
-          // Datos del Residente (Vienen dentro de la lista residentes)
-          nombre: res ? res.nombre : 'Sin asignar',
-          email: res ? res.email : 'N/A',
-          telefono: res ? res.telefono : 'N/A',
-          
-          estado_pago: 'AL_DIA' 
-        };
-      });
-
-      // 2. Guardamos la lista (serán exactamente 15 filas, o menos si es la última página)
-      setResidentes(datosFormateados); 
-      
-      // 3. Sincronizamos totales
-      setTotalItems(total || 0);
-      setTotalPages(Math.ceil((total || 0) / limit) || 1);
-
-    } catch (error) {
-      console.error("Error cargando la lista:", error);
-    } finally {
-      setCargando(false);
-    }
-  }, [id, page, busqueda, limit]);
+  } catch (error) {
+    console.error("Error cargando la lista:", error);
+  } finally {
+    setCargando(false);
+  }
+}, [id, page, busqueda, limit]);
 
 useEffect(() => {
   setPage(1);
@@ -136,10 +109,33 @@ useEffect(() => {
     setFormResidente({ ...formResidente, [e.target.name]: e.target.value });
   };
 
-  const handleEditar = (res) => {
-    setFormResidente({ ...res }); 
-    setMostrarModal(true);       
-  };
+  
+
+  const handleEditar = (residente) => {
+  // Aquí 'residente' es el objeto del humano que pasamos desde la tabla
+  setFormResidente({ 
+    ...residente,
+    // Necesitamos asegurar que el formulario sepa a qué unidad pertenece para el modo lectura
+    numero_unidad: residente.propiedades?.[0]?.numero_unidad || '' 
+  }); 
+  setMostrarModal(true);       
+};
+
+// Función para el botón ASIGNAR (Nueva)
+const handleAsignar = (propiedadId) => {
+  // Buscamos la propiedad en nuestro estado actual
+  const prop = residentes.find(p => p.id === propiedadId);
+  
+  if (prop) {
+    setFormResidente({
+      ...INITIAL_FORM_STATE,
+      propiedad_id: prop.id,
+      numero_unidad: prop.numero_unidad,
+      prorrateo: prop.prorrateo
+    });
+    setMostrarModal(true);
+  }
+};
 
   const cerrarModal = () => {
     setMostrarModal(false);
@@ -148,28 +144,34 @@ useEffect(() => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const payload = {
-      nombre: formResidente.nombre,
-      email: formResidente.email?.trim() || null, 
-      telefono: formResidente.telefono || null,
-      numero_unidad: formResidente.numero_unidad,
-      comunidad_id: parseInt(id),
-      prorrateo: parseFloat(formResidente.prorrateo) || 0
-    };
-
-    try {
-      if (formResidente.id) {
-        await api.put(`/api/residentes/${formResidente.id}`, payload);
-      } else {
-        await api.post(`/api/residentes`, payload);
-      }
-      cerrarModal();
-      cargarPropiedadesYResidentes(); 
-    } catch (error) {
-      alert(`Error: ${error.response?.data?.detail || "Error al guardar"}`);
-    }
+  e.preventDefault();
+  
+  // Aseguramos que los tipos de datos coincidan con el Schema de FastAPI
+  const payload = {
+    nombre: formResidente.nombre.trim(),
+    // Si el email está vacío, enviamos null (EmailStr falla con strings vacíos "")
+    email: formResidente.email?.trim() || null, 
+    telefono: formResidente.telefono?.trim() || null,
+    numero_unidad: String(formResidente.numero_unidad),
+    comunidad_id: parseInt(id),
+    prorrateo: parseFloat(formResidente.prorrateo) || 0,
+    activo: 1 // Forzamos el estado activo al crear
   };
+
+  try {
+    if (formResidente.id) {
+      await api.put(`/api/residentes/${formResidente.id}`, payload);
+    } else {
+      await api.post(`/api/residentes`, payload);
+    }
+    cerrarModal();
+    cargarPropiedadesYResidentes(); 
+  } catch (error) {
+    // Si sigue dando 422, este alert te dirá exactamente qué campo falla
+    console.error("Detalle del error 422:", error.response?.data?.detail);
+    alert(`Error: ${JSON.stringify(error.response?.data?.detail)}`);
+  }
+};
 
   const handleEliminar = async (resId) => {
     if (!window.confirm("¿Confirmar eliminación del residente?")) return;
@@ -213,13 +215,7 @@ useEffect(() => {
           />
         </div>
 
-        <button 
-          onClick={() => { setFormResidente(INITIAL_FORM_STATE); setMostrarModal(true); }}
-          className="w-full md:w-auto bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 font-medium transition-all active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Residente
-        </button>
+       
       </div>
 
       {/* TABLA */}
@@ -248,40 +244,91 @@ useEffect(() => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {residentes.map((res, index) => (
-                    <tr key={`${res.id}-${res.propiedad_id}-${index}`} className="hover:bg-gray-50/80 transition-colors group">
-                      <td className="p-4 whitespace-nowrap">
+                  {residentes.map((prop, index) => {
+                    // Extraemos al residente activo de la propiedad (si existe)
+                    const residenteActivo = prop.residentes && prop.residentes.length > 0 ? prop.residentes[0] : null;
+
+                    return (
+                      <tr key={`${prop.id}-${index}`} className="hover:bg-gray-50/80 transition-colors group">
+                        {/* Celda de la Unidad - Siempre visible */}
+                        <td className="p-4 whitespace-nowrap">
                           <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                             <Home className="w-4 h-4 text-gray-400" />
-                             Unidad {res.numero_unidad}
+                            <Home className={`w-4 h-4 ${residenteActivo ? 'text-gray-400' : 'text-amber-400'}`} />
+                            Unidad {prop.numero_unidad}
                           </div>
-                          <div className="text-[11px] text-gray-400 font-mono mt-0.5 ml-6">Coef: {res.prorrateo}</div>
-                      </td>
-                      <td className="p-4 whitespace-nowrap text-sm font-bold text-gray-900">{res.nombre}</td>
-                      <td className="p-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="text-[11px] text-gray-400 font-mono mt-0.5 ml-6">Coef: {prop.prorrateo}</div>
+                        </td>
+
+                        {/* Celda del Nombre - Condicional */}
+                        <td className="p-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                          {residenteActivo ? (
+                            residenteActivo.nombre
+                          ) : (
+                            <span className="text-gray-300 font-normal italic">Sin asignar</span>
+                          )}
+                        </td>
+
+                        {/* Celda de Contacto - Condicional */}
+                        <td className="p-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex flex-col gap-1">
-                              {res.email && <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 opacity-70" /> {res.email}</div>}
-                              {res.telefono && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Phone className="w-3.5 h-3.5 opacity-70" /> {res.telefono}</div>}
+                            {residenteActivo ? (
+                              <>
+                                {residenteActivo.email && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Mail className="w-3.5 h-3.5 opacity-70" /> {residenteActivo.email}
+                                  </div>
+                                )}
+                                {residenteActivo.telefono && (
+                                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                    <Phone className="w-3.5 h-3.5 opacity-70" /> {residenteActivo.telefono}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-gray-400 uppercase tracking-tighter">Esperando residente</span>
+                            )}
                           </div>
-                      </td>
-                      <td className="p-4 whitespace-nowrap text-sm">
-                        <span className={`inline-block px-2.5 py-1 text-[10px] rounded-md font-bold uppercase tracking-widest border 
-                          ${res.estado_pago === 'MOROSO' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                          {res.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <div className="flex justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleEditar(res)} className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-all">
-                             <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleEliminar(res.id)} className="text-gray-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-all">
-                             <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+
+                        {/* Celda de Estado de Pago */}
+                        <td className="p-4 whitespace-nowrap text-sm">
+                          {residenteActivo ? (
+                            <span className={`inline-block px-2.5 py-1 text-[10px] rounded-md font-bold uppercase tracking-widest border 
+                              ${prop.estado_pago === 'MOROSO' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                              {prop.estado_pago === 'MOROSO' ? 'Moroso' : 'Al Día'}
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 text-[10px] rounded-md font-bold uppercase tracking-widest border bg-gray-50 text-gray-400 border-gray-200">
+                              Vacante
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Acciones */}
+                        <td className="p-4 text-center">
+                          <div className="flex justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            {residenteActivo ? (
+                              <>
+                                <button onClick={() => handleEditar(residenteActivo)} className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-all">
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleEliminar(residenteActivo.id)} className="text-gray-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-all">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => handleAsignar(prop.id)} 
+                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-indigo-100"
+                              >
+                                ASIGNAR
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -311,36 +358,103 @@ useEffect(() => {
                  <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-700 p-1"><X className="w-5 h-5"/></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {!formResidente.id ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Unidad</label>
-                        <input type="text" name="numero_unidad" value={formResidente.numero_unidad} onChange={handleInputChange} placeholder="101" required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-indigo-500" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Prorrateo</label>
-                        <input type="number" step="0.000001" name="prorrateo" value={formResidente.prorrateo} onChange={handleInputChange} disabled={!!unidadExistente} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono outline-none focus:border-indigo-500 disabled:bg-gray-100" />
-                      </div>
+              {/* SECCIÓN DE UBICACIÓN (Lectura o Búsqueda) */}
+              <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 space-y-3">
+                <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                  <Home className="w-4 h-4" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Información de la Propiedad</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">Unidad / Depto</label>
+                    <input 
+                      type="text" 
+                      name="numero_unidad" 
+                      value={formResidente.numero_unidad} 
+                      onChange={handleInputChange} 
+                      disabled={!!formResidente.id || !!formResidente.propiedad_id} // Bloqueado si viene de "Asignar" o es Edición
+                      placeholder="Ej: 101" 
+                      required 
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-indigo-500 disabled:bg-gray-100/50 disabled:text-gray-500" 
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">Prorrateo (%)</label>
+                    <div className="w-full px-4 py-2 bg-gray-100/50 border border-gray-200 rounded-xl text-sm font-mono text-gray-500 flex items-center justify-between">
+                      {formResidente.prorrateo || '0.000000'}
+                      <Percent className="w-3 h-3 opacity-40" />
                     </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5"><label className="text-xs font-bold text-gray-500">Unidad</label><input type="text" value={formResidente.numero_unidad} disabled className="w-full px-4 py-2.5 bg-gray-100 border rounded-xl text-sm font-bold text-gray-400" /></div>
-                    <div className="space-y-1.5"><label className="text-xs font-bold text-gray-500">Prorrateo</label><input type="text" value={formResidente.prorrateo} disabled className="w-full px-4 py-2.5 bg-gray-100 border rounded-xl text-sm font-bold text-gray-400" /></div>
+                </div>
+
+                {/* Alerta visual si la unidad no existe en el sistema */}
+                {!formResidente.id && !unidadExistente && formResidente.numero_unidad && (
+                  <div className="flex items-center gap-2 text-[10px] text-amber-600 font-medium animate-pulse">
+                    <AlertCircle className="w-3 h-3" />
+                    La unidad se creará automáticamente si no existe.
                   </div>
                 )}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500">Nombre Completo</label>
-                <input type="text" name="nombre" value={formResidente.nombre} onChange={handleInputChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><label className="text-xs font-bold text-gray-500">Email</label><input type="email" name="email" value={formResidente.email} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm" /></div>
-                  <div className="space-y-1.5"><label className="text-xs font-bold text-gray-500">Teléfono</label><input type="text" name="telefono" value={formResidente.telefono} onChange={handleInputChange} className="w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm" /></div>
+
+              {/* SECCIÓN DE DATOS PERSONALES */}
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <User className="w-3.5 h-3.5" /> Nombre del Residente
+                  </label>
+                  <input 
+                    type="text" 
+                    name="nombre" 
+                    value={formResidente.nombre} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder="Nombre completo"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Email</label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      value={formResidente.email} 
+                      onChange={handleInputChange} 
+                      placeholder="correo@ejemplo.com"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-indigo-500" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Teléfono</label>
+                    <input 
+                      type="text" 
+                      name="telefono" 
+                      value={formResidente.telefono} 
+                      onChange={handleInputChange} 
+                      placeholder="+56 9..."
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-indigo-500" 
+                    />
+                  </div>
+                </div>
               </div>
+
               <div className="pt-4 flex gap-3">
-                <button type="button" onClick={cerrarModal} className="flex-1 px-4 py-2.5 text-sm font-semibold bg-white border border-gray-300 rounded-xl">Cancelar</button>
-                <button type="submit" className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl">Guardar</button>
+                <button 
+                  type="button" 
+                  onClick={cerrarModal} 
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-200 transition-all active:scale-95"
+                >
+                  {formResidente.id ? 'Actualizar Datos' : 'Asignar Residente'}
+                </button>
               </div>
             </form>
           </div>

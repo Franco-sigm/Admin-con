@@ -38,8 +38,8 @@ const Navbar = () => {
                 <Settings className="w-5 h-5 text-white animate-spin-slow" />
              </div>
              <span className="font-bold text-xl tracking-tight">
-               <span className="text-indigo-600 dark:text-indigo-400">CON</span>
-               <span className="text-gray-900 dark:text-white">ADMIN</span>
+               <span className="text-indigo-600 dark:text-indigo-400">Admi</span>
+               <span className="text-gray-900 dark:text-white">nistrador</span>
              </span>
           </div>
 
