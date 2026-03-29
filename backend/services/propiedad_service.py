@@ -21,6 +21,10 @@ def crear_propiedad(db: Session, propiedad: schemas.PropiedadCreate):
     try:
         db.add(db_propiedad)
         db.commit()
+        
+        # Autoguardado: Recalculamos tras añadir una nueva unidad
+        recalcular_todos_los_prorrateos(db, db_propiedad.comunidad_id)
+        
         db.refresh(db_propiedad)
         return db_propiedad
     except IntegrityError:
@@ -57,10 +61,16 @@ def eliminar_propiedad(db: Session, propiedad_id: int):
     
     if not propiedad:
         raise HTTPException(status_code=404, detail="Propiedad no encontrada.")
+        
+    # Guardamos el ID de la comunidad antes de borrar la propiedad
+    comunidad_id = propiedad.comunidad_id
     
     try:
         db.delete(propiedad)
         db.commit()
+        
+        # Autoguardado: Recalculamos porque ahora hay una unidad menos
+        recalcular_todos_los_prorrateos(db, comunidad_id)
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="No se puede eliminar esta propiedad porque tiene residentes o deudas asociadas.")
@@ -76,6 +86,10 @@ def actualizar_propiedad(db: Session, propiedad_id: int, propiedad_in: schemas.P
             setattr(db_propiedad, key, value)
         
         db.commit()
+        
+        # Autoguardado: Recalculamos tras modificar la superficie
+        recalcular_todos_los_prorrateos(db, db_propiedad.comunidad_id)
+        
         db.refresh(db_propiedad)
     return db_propiedad
 
@@ -119,4 +133,8 @@ def asignar_superficie_masiva(db: Session, comunidad_id: int, superficie: float)
     ).update({"superficie_m2": superficie}, synchronize_session=False)
     
     db.commit()
+    
+    # Autoguardado: Recalculamos tras la asignación masiva
+    recalcular_todos_los_prorrateos(db, comunidad_id)
+    
     return {"mensaje": f"Se asignaron {superficie} m² a {filas_actualizadas} unidades de la comunidad."}

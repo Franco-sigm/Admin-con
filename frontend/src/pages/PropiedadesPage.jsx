@@ -380,7 +380,7 @@ useEffect(() => {
         )}
       </div>
 
-      {/* --- MODAL PREMIUM --- */}
+  
       {/* --- MODAL PREMIUM ADAPTADO --- */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in px-4">
@@ -437,26 +437,7 @@ useEffect(() => {
                   </p>
                 </div>
 
-                {/* PRORRATEO (MANUAL) */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Prorrateo Actual (Decimal)</label>
-                  <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Percent className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <input 
-                        name="prorrateo"
-                        type="number" step="0.000001" required
-                        placeholder="Ej: 0.025"
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-bold font-mono text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                        value={formData.prorrateo}
-                        onChange={handleInputChange}
-                      />
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-1 font-medium leading-tight">
-                    Puedes ingresarlo manual o dejar que el sistema lo calcule desde la <strong className="text-indigo-600">Configuración</strong>.
-                  </p>
-                </div>
+                
 
                 {/* BOTONES */}
                 <div className="pt-4 flex gap-3 border-t border-gray-100">

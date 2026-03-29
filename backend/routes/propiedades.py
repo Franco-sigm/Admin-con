@@ -7,7 +7,6 @@ import services.propiedad_service as prop_service
 import models
 import services.propiedad_service as propiedad_service
 
-
 # Asumiendo que moveremos la seguridad a security.py como acordamos
 from security import obtener_usuario_actual 
 
@@ -62,19 +61,6 @@ def actualizar_propiedad(
         raise HTTPException(status_code=404, detail="Propiedad no encontrada")
     return db_propiedad
 
-@router.put("/{id}", response_model=schemas.Comunidad)
-def update_comunidad(id: int, comunidad_in: schemas.ComunidadUpdate, db: Session = Depends(get_db)):
-    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == id).first()
-    if not db_comunidad:
-        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
-    
-    for key, value in comunidad_in.dict(exclude_unset=True).items():
-        setattr(db_comunidad, key, value)
-    
-    db.commit()
-    db.refresh(db_comunidad)
-    return db_comunidad
-
 # En routes/propiedades.py
 @router.post("/comunidad/{comunidad_id}/recalcular-prorrateos")
 def recalcular(comunidad_id: int, db: Session = Depends(get_db)):
@@ -87,4 +73,17 @@ def recalcular(comunidad_id: int, db: Session = Depends(get_db)):
 
 @router.post("/comunidad/{comunidad_id}/superficie-masiva")
 def asignar_superficie_masiva(comunidad_id: int, superficie: float, db: Session = Depends(get_db)):
-    return prop_service.asignar_superficie_masiva(db, comunidad_id, superficie)
+    if superficie <= 0:
+        raise HTTPException(status_code=400, detail="La superficie debe ser mayor a 0")
+        
+    # Actualizamos todas las propiedades de la comunidad en una sola consulta
+    db.query(models.Propiedad).filter(
+        models.Propiedad.comunidad_id == comunidad_id
+    ).update({"superficie_m2": superficie})
+    
+    db.commit()
+    
+    # Autoguardado masivo: recalculamos tras la asignación
+    prop_service.recalcular_todos_los_prorrateos(db, comunidad_id)
+    
+    return {"mensaje": f"Se asignaron {superficie} m² a todas las unidades."}

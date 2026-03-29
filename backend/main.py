@@ -8,7 +8,8 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from routes import usuarios, comunidades, financiero, propiedades, residentes, informes, cargos, cierre
+from routes import usuarios, comunidades, financiero, propiedades, residentes, informes, cargos, cierre, configuracion
+from services import usuario_service
 
 from database import engine, Base, get_db
 import schemas
@@ -60,6 +61,7 @@ app.include_router(residentes.router)
 app.include_router(informes.router) # Nueva ruta para informes y reportes
 app.include_router(cargos.router) # Nueva ruta para cargos y gastos comunes 
 app.include_router(cierre.router) # Nueva ruta para cierres mensuales
+app.include_router(configuracion.router) # Nueva ruta para configuración de comunidad
                    
 # ==========================================
 # 🔒 SISTEMA DE SEGURIDAD (Reemplazo del Decorador)
