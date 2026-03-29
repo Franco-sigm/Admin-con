@@ -102,10 +102,10 @@ def ver_deudas_pendientes(
 ):
     return financiero_service.obtener_cargos_pendientes_por_propiedad(db=db, propiedad_id=propiedad_id)
 
-@router.delete("/transacciones/{transaccion_id}", status_code=204)
-def eliminar_movimiento(
+@router.patch("/transacciones/{transaccion_id}/anular")
+def anular_movimiento(
     transaccion_id: int, 
     db: Session = Depends(get_db),
     usuario_actual: schemas.Usuario = Depends(obtener_usuario_actual)
 ):
-    return financiero_service.eliminar_transaccion(db=db, transaccion_id=transaccion_id)
+    return financiero_service.anular_transaccion(db=db, transaccion_id=transaccion_id)

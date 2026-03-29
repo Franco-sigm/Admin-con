@@ -6,7 +6,7 @@ from datetime import datetime
 import models  # <--- Usaremos este como base
 import schemas
 
-# --- 1. CONSULTAS DE LISTADO ---
+
 
 def obtener_transacciones_comunidad(db: Session, comunidad_id: int, mes: int = None, anio: int = None, skip: int = 0, limit: int = 20):
     query = db.query(models.Transaccion).filter(models.Transaccion.comunidad_id == comunidad_id)
@@ -136,12 +136,14 @@ def registrar_transaccion_y_pagar_cargos(
 def obtener_balance_comunidad(db: Session, comunidad_id: int):
     ingresos = db.query(func.sum(models.Transaccion.monto_total)).filter( # <--- Agregado models.
         models.Transaccion.comunidad_id == comunidad_id,
-        models.Transaccion.tipo == 'INGRESO'
+        models.Transaccion.tipo == 'INGRESO',
+        models.Transaccion.estado != 'ANULADO'  # Excluimos transacciones anuladas
     ).scalar() or 0
 
     egresos = db.query(func.sum(models.Transaccion.monto_total)).filter( # <--- Agregado models.
         models.Transaccion.comunidad_id == comunidad_id,
-        models.Transaccion.tipo == 'EGRESO'
+        models.Transaccion.tipo == 'EGRESO',
+        models.Transaccion.estado != 'ANULADO'  # Excluimos transacciones anuladas
     ).scalar() or 0
 
     cargos_pendientes = db.query(models.Cargo).filter( # <--- Agregado models.
@@ -165,3 +167,37 @@ def obtener_balance_comunidad(db: Session, comunidad_id: int):
         "balance_actual": ingresos - egresos,
         "por_cobrar": float(monto_total_deuda) - float(total_abonado)
     }
+
+def anular_transaccion(db: Session, transaccion_id: int):
+    transaccion = db.query(models.Transaccion).filter(models.Transaccion.id == transaccion_id).first()
+    if not transaccion:
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
+    
+    if getattr(transaccion, 'estado', None) == 'ANULADO':
+        raise HTTPException(status_code=400, detail="La transacción ya se encuentra anulada")
+
+    # Reversión de pagos si es un INGRESO que saldó cargos
+    if transaccion.tipo == 'INGRESO':
+        detalles = db.query(models.DetallePago).filter(models.DetallePago.transaccion_id == transaccion.id).all()
+        for detalle in detalles:
+            cargo = db.query(models.Cargo).filter(models.Cargo.id == detalle.cargo_id).first()
+            if cargo:
+                # Calculamos cuánto se ha pagado de este cargo excluyendo el detalle actual que vamos a anular
+                otros_abonos = db.query(func.sum(models.DetallePago.monto_abonado)).filter(
+                    models.DetallePago.cargo_id == cargo.id,
+                    models.DetallePago.id != detalle.id
+                ).scalar() or 0
+                
+                # Actualizamos el estado del cargo en base a los abonos restantes
+                if otros_abonos == 0:
+                    cargo.estado = 'PENDIENTE'
+                elif otros_abonos < cargo.monto:
+                    cargo.estado = 'PARCIAL'
+                
+                # Eliminamos el registro de este abono
+                db.delete(detalle)
+
+    transaccion.estado = 'ANULADO'
+    db.commit()
+    db.refresh(transaccion)
+    return transaccion

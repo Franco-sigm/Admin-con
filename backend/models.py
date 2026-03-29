@@ -135,6 +135,7 @@ class Transaccion(Base):
     detalles = relationship("DetallePago", back_populates="transaccion")
     
     fecha_creacion = Column(DateTime, server_default=func.now())
+    estado = Column(String, default="ACTIVO")
 # 7. TABLA DETALLE DE PAGOS (NUEVA: La Tabla Puente / La Magia)
 # Esta tabla explica CÓMO una Transacción de Ingreso pagó uno o varios Cargos
 class DetallePago(Base):

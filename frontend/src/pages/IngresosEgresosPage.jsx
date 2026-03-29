@@ -95,14 +95,19 @@ const IngresosEgresosPage = () => {
     }
   };
 
-  const handleDelete = async (transaccionId) => {
-    if (!window.confirm("¿Estás seguro de eliminar este registro?")) return;
+  const handleAnular = async (transaccionId) => {
+    const confirmacion = window.confirm(
+      "¿Estás seguro de ANULAR este registro?\n\nPor buenas prácticas, asegúrate de que el mes actual no esté cerrado. Esta acción revertirá su efecto en el balance."
+    );
+    if (!confirmacion) return;
+    
     try {
-      await api.delete(`/api/finanzas/transacciones/${transaccionId}`);
+      // Idealmente a futuro: await api.patch(`/api/finanzas/transacciones/${transaccionId}/anular`);
+      await api.patch(`/api/finanzas/transacciones/${transaccionId}/anular`);
       fetchTransactions();
       fetchBalance();
     } catch (error) {
-      alert("No se pudo eliminar.");
+      alert("No se pudo anular la transacción.");
     }
   };
 
@@ -201,7 +206,11 @@ const IngresosEgresosPage = () => {
                     ) : (
                         <span className="text-gray-300 text-xs">-</span>
                     )}
-                    <button onClick={() => handleDelete(item.id)} className="ml-3 text-rose-400 hover:text-rose-600"><Trash2 size={16} /></button>
+                    {/* Ocultar botón si el estado de la transacción es 'ANULADO' (cuando lo implementes en backend) */}
+                    {item.estado !== 'ANULADO' && (
+                      <button onClick={() => handleAnular(item.id)} title="Anular transacción" className="ml-3 text-rose-400 hover:text-rose-600"><Trash2 size={16} /></button>
+                    )}
+                    {item.estado === 'ANULADO' && <span className="ml-3 text-xs text-gray-400 font-bold">ANULADO</span>}
                   </td>
                 </tr>
               ))}
