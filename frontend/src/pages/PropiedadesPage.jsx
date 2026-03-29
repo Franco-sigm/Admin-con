@@ -12,7 +12,7 @@ const PropiedadesPage = () => {
   const [propiedades, setPropiedades] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
-
+  
   // 2. Estados de Paginación (Sincronizados con el Backend)
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -27,6 +27,12 @@ const PropiedadesPage = () => {
     prorrateo: '',
     superficie_m2: ''
   });
+
+  // 4. Estados para Edición en Línea (Superficie)
+  const [editingInlineId, setEditingInlineId] = useState(null);
+  const [inlineValue, setInlineValue] = useState("");
+
+
 
   // --- FUNCIÓN DE CARGA CON BÚSQUEDA GLOBAL ---
   const cargarPropiedades = useCallback(async () => {
@@ -52,12 +58,14 @@ const PropiedadesPage = () => {
     }
   }, [id, page, busqueda, limit]);
 
-  // 4. Resetear a página 1 cuando el usuario busca algo nuevo
+
+
+  // Resetear a página 1 cuando el usuario busca algo nuevo
   useEffect(() => {
     setPage(1);
   }, [busqueda]);
 
-  // 5. useEffect con Debounce para evitar saturar el server
+  // useEffect con Debounce para evitar saturar el server
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (id) cargarPropiedades();
@@ -185,6 +193,47 @@ useEffect(() => {
   return () => clearTimeout(delayDebounceFn);
 }, [id, page, busqueda, cargarPropiedades]);
 
+  // --- FUNCIONES PARA EDICIÓN EN LÍNEA DE SUPERFICIE ---
+  const startInlineEdit = (prop) => {
+    setEditingInlineId(prop.id);
+    setInlineValue(prop.superficie_m2 || "");
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingInlineId(null);
+    setInlineValue("");
+  };
+
+  const saveInlineEdit = async (prop) => {
+    if (editingInlineId !== prop.id) return; // Evitar doble ejecución (ej: Enter + Blur)
+
+    const newValue = parseFloat(inlineValue) || 0;
+    
+    // Cerramos el input inmediatamente para evitar parpadeos
+    setEditingInlineId(null);
+
+    if (newValue === (prop.superficie_m2 || 0)) return; // No hacer petición si no cambió
+
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        numero_unidad: prop.numero_unidad,
+        prorrateo: prop.prorrateo,
+        superficie_m2: newValue,
+        comunidad_id: parseInt(id)
+      };
+      await api.put(`/api/propiedades/${prop.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Actualizamos visualmente la tabla de inmediato
+      setPropiedades(prev => prev.map(p => p.id === prop.id ? { ...p, superficie_m2: newValue } : p));
+    } catch (error) {
+      console.error("Error al actualizar superficie en línea:", error);
+      alert("Error al actualizar la superficie.");
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-down pb-12 p-6">
       
@@ -245,8 +294,9 @@ useEffect(() => {
                   <tr>
                     <th className="p-4 font-semibold">Unidad / Depto</th>
                     <th className="p-4 font-semibold text-center">Prorrateo (Coeficiente)</th>
-                    <th className="px-6 py-4 text-center">Superficie (m²)</th> {/* Nueva Columna */}
+                    
                     <th className="p-4 font-semibold text-center">Porcentaje Visual</th>
+                    <th className="px-6 py-4 text-center">Superficie (m²)</th>
                     <th className="p-4 font-semibold text-center">Acciones</th>
                   </tr>
                 </thead>
@@ -266,6 +316,31 @@ useEffect(() => {
                         <span className="inline-block px-2.5 py-1 text-[11px] rounded-md font-bold tracking-widest bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-[inset_0_1px_0_rgba(255,255,255,1)]">
                           {(prop.prorrateo * 100).toFixed(2)}%
                         </span>
+                      </td>
+                      <td className="p-4 text-center font-mono text-sm font-semibold text-gray-600">
+                        {editingInlineId === prop.id ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            autoFocus
+                            className="w-24 px-2 py-1 text-center border-2 border-indigo-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                            value={inlineValue}
+                            onChange={(e) => setInlineValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveInlineEdit(prop);
+                              if (e.key === 'Escape') cancelInlineEdit();
+                            }}
+                            onBlur={() => saveInlineEdit(prop)}
+                          />
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 px-3 py-1.5 rounded-lg transition-colors inline-block border border-transparent hover:border-indigo-100"
+                            onClick={() => startInlineEdit(prop)}
+                            title="Haz clic para editar la superficie"
+                          >
+                            {prop.superficie_m2 || '0'}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">

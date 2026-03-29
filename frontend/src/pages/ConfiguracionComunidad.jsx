@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Save, Building2, Calculator, Percent, ShieldCheck, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Save, Building2, Calculator, Percent, ShieldCheck, RefreshCw, AlertTriangle, Zap} from 'lucide-react';
 import api from '../api/client';
 
 const ConfiguracionComunidad = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [superficieMasiva, setSuperficieMasiva] = useState("");
   const [comunidad, setComunidad] = useState({
     nombre: '',
     rut: '',
@@ -42,6 +43,22 @@ const ConfiguracionComunidad = () => {
   }
 };
 
+  // --- FUNCIÓN PARA APLICAR SUPERFICIE MASIVA ---
+  const aplicarSuperficieMasiva = async () => {
+    if (!superficieMasiva || superficieMasiva <= 0) return alert("Ingresa un valor válido");
+    
+    if (!window.confirm(`¿Seguro? Todas las unidades pasarán a tener ${superficieMasiva} m².`)) return;
+  
+    try {
+      await api.post(`/api/propiedades/comunidad/${id}/superficie-masiva?superficie=${superficieMasiva}`);
+      alert("Superficies actualizadas. ¡No olvides recalcular los prorrateos ahora!");
+      setSuperficieMasiva(""); // Limpiar campo
+    } catch (error) {
+      alert("Error al aplicar superficie masiva");
+    }
+  };
+  
+  // --- FUNCIÓN PARA RECALCULAR PRORRATEOS ---
   const recalcularProrrateos = async () => {
     if (!window.confirm("¿Estás seguro? Esto sobrescribirá el prorrateo de todas las unidades basado en sus m2 actuales.")) return;
     try {
@@ -157,6 +174,31 @@ const ConfiguracionComunidad = () => {
             </div>
           </section>
         </div>
+
+        <section className="bg-amber-50 rounded-3xl p-6 border border-amber-100 space-y-4">
+          <h2 className="font-bold text-amber-800 flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            Asignación Masiva (Ahorro de Tiempo)
+          </h2>
+          <p className="text-xs text-amber-700">
+            Si todas las unidades miden lo mismo, ingresa los metros aquí para no hacerlo uno por uno.
+          </p>
+          <div className="flex gap-3">
+            <input 
+              type="number" 
+              placeholder="Ej: 55.4"
+              value={superficieMasiva}
+              onChange={(e) => setSuperficieMasiva(e.target.value)}
+              className="flex-1 bg-white border-amber-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-amber-500 outline-none font-bold"
+            />
+            <button 
+              onClick={aplicarSuperficieMasiva}
+              className="bg-amber-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-amber-700 transition-all text-sm"
+            >
+              Aplicar a Todo
+            </button>
+          </div>
+        </section>
 
         {/* Columna Derecha: Parámetros Financieros */}
         <div className="space-y-6">

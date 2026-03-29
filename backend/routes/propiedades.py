@@ -4,6 +4,9 @@ from typing import List
 import schemas
 from database import get_db
 import services.propiedad_service as prop_service
+import models
+import services.propiedad_service as propiedad_service
+
 
 # Asumiendo que moveremos la seguridad a security.py como acordamos
 from security import obtener_usuario_actual 
@@ -79,3 +82,9 @@ def recalcular(comunidad_id: int, db: Session = Depends(get_db)):
     if "error" in res:
         raise HTTPException(status_code=400, detail=res["error"])
     return res
+
+
+
+@router.post("/comunidad/{comunidad_id}/superficie-masiva")
+def asignar_superficie_masiva(comunidad_id: int, superficie: float, db: Session = Depends(get_db)):
+    return prop_service.asignar_superficie_masiva(db, comunidad_id, superficie)

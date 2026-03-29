@@ -81,21 +81,42 @@ def actualizar_propiedad(db: Session, propiedad_id: int, propiedad_in: schemas.P
 
 
 def recalcular_todos_los_prorrateos(db: Session, comunidad_id: int):
-    # 1. Obtener la superficie total de la configuración
+    # 1. Obtener la comunidad
     comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
     
-    if not comunidad or comunidad.superficie_total_m2 <= 0:
-        return {"error": "Configura la superficie total de la comunidad primero."}
+    if not comunidad:
+        return {"error": "Comunidad no encontrada."}
 
     # 2. Obtener todas las unidades
     propiedades = db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).all()
 
+    # 3. Calcular la superficie total automáticamente sumando todas las unidades
+    superficie_total_calculada = sum((p.superficie_m2 or 0) for p in propiedades)
+    
+    if superficie_total_calculada <= 0:
+        return {"error": "Las unidades no tienen superficie asignada para poder calcular el prorrateo."}
+
+    # Actualizamos la comunidad con el valor real sumado
+    comunidad.superficie_total_m2 = superficie_total_calculada
+
     for p in propiedades:
         if p.superficie_m2 and p.superficie_m2 > 0:
-            # Cálculo exacto
-            p.prorrateo = p.superficie_m2 / comunidad.superficie_total_m2
+            # Cálculo exacto asegurando que el total de la comunidad sea 100%
+            p.prorrateo = p.superficie_m2 / superficie_total_calculada
         else:
             p.prorrateo = 0.0
 
     db.commit()
-    return {"mensaje": f"Prorrateos actualizados para {len(propiedades)} unidades."}
+    return {"mensaje": f"Prorrateos calculados usando una superficie total de {superficie_total_calculada} m² para {len(propiedades)} unidades."}
+
+def asignar_superficie_masiva(db: Session, comunidad_id: int, superficie: float):
+    if superficie <= 0:
+        raise HTTPException(status_code=400, detail="La superficie debe ser mayor a 0")
+        
+    # update() devuelve automáticamente el número de filas que coinciden y se actualizan
+    filas_actualizadas = db.query(models.Propiedad).filter(
+        models.Propiedad.comunidad_id == comunidad_id
+    ).update({"superficie_m2": superficie}, synchronize_session=False)
+    
+    db.commit()
+    return {"mensaje": f"Se asignaron {superficie} m² a {filas_actualizadas} unidades de la comunidad."}
