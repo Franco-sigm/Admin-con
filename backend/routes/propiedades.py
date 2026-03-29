@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import schemas
 from database import get_db
-from services import propiedad_service
+import services.propiedad_service as prop_service
 
 # Asumiendo que moveremos la seguridad a security.py como acordamos
 from security import obtener_usuario_actual 
@@ -33,7 +33,7 @@ def listar_propiedades(
     db: Session = Depends(get_db)
 ):
     skip = (page - 1) * limit
-    return propiedad_service.obtener_propiedades_por_comunidad(
+    return prop_service.obtener_propiedades_por_comunidad(
         db, comunidad_id, skip, limit, search
     )
 
@@ -58,3 +58,24 @@ def actualizar_propiedad(
     if not db_propiedad:
         raise HTTPException(status_code=404, detail="Propiedad no encontrada")
     return db_propiedad
+
+@router.put("/{id}", response_model=schemas.Comunidad)
+def update_comunidad(id: int, comunidad_in: schemas.ComunidadUpdate, db: Session = Depends(get_db)):
+    db_comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == id).first()
+    if not db_comunidad:
+        raise HTTPException(status_code=404, detail="Comunidad no encontrada")
+    
+    for key, value in comunidad_in.dict(exclude_unset=True).items():
+        setattr(db_comunidad, key, value)
+    
+    db.commit()
+    db.refresh(db_comunidad)
+    return db_comunidad
+
+# En routes/propiedades.py
+@router.post("/comunidad/{comunidad_id}/recalcular-prorrateos")
+def recalcular(comunidad_id: int, db: Session = Depends(get_db)):
+    res = prop_service.recalcular_todos_los_prorrateos(db, comunidad_id)
+    if "error" in res:
+        raise HTTPException(status_code=400, detail=res["error"])
+    return res

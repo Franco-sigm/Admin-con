@@ -35,6 +35,8 @@ class Comunidad(Base):
     usuario_id = Column(Integer, ForeignKey("usuarios.id")) 
     creador = relationship("Usuario", back_populates="comunidades_creadas", foreign_keys=[usuario_id])
     cierres = relationship("CierreMensual", back_populates="comunidad")
+    superficie_total_m2 = Column(Float, default=0.0)
+    fondo_reserva_porcentaje = Column(Float, default=0.0)
 
 # 2. TABLA USUARIOS (Sin cambios)
 class Usuario(Base):
@@ -72,8 +74,8 @@ class Propiedad(Base):
     cargos = relationship("Cargo", back_populates="propiedad")
     transacciones = relationship("Transaccion", back_populates="propiedad")
     coeficiente = Column(Float, default=0.0)
-  
-
+    
+    superficie_m2 = Column(Float, default=0.0)
     
 
 # 4. TABLA RESIDENTES (MODIFICADA: Ahora se asocia a una Propiedad, no a un String suelto)

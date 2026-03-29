@@ -78,3 +78,24 @@ def actualizar_propiedad(db: Session, propiedad_id: int, propiedad_in: schemas.P
         db.commit()
         db.refresh(db_propiedad)
     return db_propiedad
+
+
+def recalcular_todos_los_prorrateos(db: Session, comunidad_id: int):
+    # 1. Obtener la superficie total de la configuración
+    comunidad = db.query(models.Comunidad).filter(models.Comunidad.id == comunidad_id).first()
+    
+    if not comunidad or comunidad.superficie_total_m2 <= 0:
+        return {"error": "Configura la superficie total de la comunidad primero."}
+
+    # 2. Obtener todas las unidades
+    propiedades = db.query(models.Propiedad).filter(models.Propiedad.comunidad_id == comunidad_id).all()
+
+    for p in propiedades:
+        if p.superficie_m2 and p.superficie_m2 > 0:
+            # Cálculo exacto
+            p.prorrateo = p.superficie_m2 / comunidad.superficie_total_m2
+        else:
+            p.prorrateo = 0.0
+
+    db.commit()
+    return {"mensaje": f"Prorrateos actualizados para {len(propiedades)} unidades."}

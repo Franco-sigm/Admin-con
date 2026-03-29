@@ -27,13 +27,17 @@ class EstadoCargo(str, Enum):
 
 
 # ==========================================
-# 1. SCHEMAS DE COMUNIDAD
+# 1. SCHEMAS DE COMUNIDAD (CORREGIDO)
 # ==========================================
 class ComunidadBase(BaseModel):
     nombre: str
     direccion: Optional[str] = None
+    rut: Optional[str] = None # Agregado para lectura
     tipo: Optional[str] = None
     unidades_totales: Optional[int] = None
+    # Estos campos son vitales para que el GET devuelva los datos a la Page
+    superficie_total_m2: float = 0.0 
+    fondo_reserva_porcentaje: float = 0.0
 
 class ComunidadCreate(ComunidadBase):
     pass
@@ -45,21 +49,32 @@ class Comunidad(ComunidadBase):
     class Config:
         from_attributes = True
 
+class ComunidadUpdate(BaseModel):
+    nombre: Optional[str] = None
+    rut: Optional[str] = None
+    direccion: Optional[str] = None
+    superficie_total_m2: Optional[float] = None
+    fondo_reserva_porcentaje: Optional[float] = None
+
 
 # ==========================================
-# 2. SCHEMAS DE PROPIEDADES (¡NUEVO!)
+# 2. SCHEMAS DE PROPIEDADES (OPTIMIZADO)
 # ==========================================
+
 class PropiedadBase(BaseModel):
     numero_unidad: str
     prorrateo: float = 0.0
-    comunidad_id: Optional[int] = None # Esto se asignará al crear la propiedad, no es necesario en el update
-
+    # Agregamos superficie aquí para que esté disponible en lectura y creación
+    superficie_m2: float = 0.0 
+    comunidad_id: Optional[int] = None
 
 class PropiedadCreate(PropiedadBase):
+    # Obligatorio al crear
     comunidad_id: int
 
 class Propiedad(PropiedadBase):
     id: int
+    # Al leer de la DB, siempre sabemos a qué comunidad pertenece
     comunidad_id: int
 
     class Config:
@@ -70,7 +85,9 @@ class PropiedadesPaginadas(BaseModel):
     items: List[Propiedad]
 
 class PropiedadUpdate(BaseModel):
+    # Todos opcionales para permitir actualizaciones parciales (PATCH/PUT)
     numero_unidad: Optional[str] = None
+    superficie_m2: Optional[float] = None
     prorrateo: Optional[float] = None
    
 

@@ -17,6 +17,7 @@ import CargosPage from './pages/CargosPage'
 import InformesPage from './pages/InformesPage'
 import PropiedadesPage from './pages/PropiedadesPage' 
 import ReportesPage from './pages/ReportesPage'
+import ConfiguracionComunidad from './pages/ConfiguracionComunidad'
 
 
  
@@ -115,6 +116,7 @@ function App() {
                <RouteRR path="cargos" element={<CargosPage />} />
                <RouteRR path="informes" element={<InformesPage />} /> 
                <RouteRR path="reportes" element={<ReportesPage />} />
+               <RouteRR path="configuracion" element={<ConfiguracionComunidad />} />
               
                
               {/* Aquí agregarás más módulos en el futuro (Conserjería, Anuncios, etc.) */}

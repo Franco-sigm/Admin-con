@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback} from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client'; 
 import BotonPaginado from '../components/BotonPaginado';
-import { Home, Edit2, Trash2, Plus, Building, X, Percent, Search,  } from 'lucide-react'; 
+import { Home, Edit2, Trash2, Plus, Building, X, Percent, Search, Ruler } from 'lucide-react'; 
+
 
 const PropiedadesPage = () => {
   const { id } = useParams(); 
@@ -23,7 +24,8 @@ const PropiedadesPage = () => {
   const [editingPropiedad, setEditingPropiedad] = useState(null);
   const [formData, setFormData] = useState({
     numero: '',
-    prorrateo: '' 
+    prorrateo: '',
+    superficie_m2: ''
   });
 
   // --- FUNCIÓN DE CARGA CON BÚSQUEDA GLOBAL ---
@@ -69,59 +71,71 @@ const PropiedadesPage = () => {
       setEditingPropiedad(propiedad);
       setFormData({
         numero: propiedad.numero_unidad,
-        prorrateo: propiedad.prorrateo
+        prorrateo: propiedad.prorrateo,
+        superficie_m2: propiedad.superficie_m2 || ''
       });
     } else {
       setEditingPropiedad(null);
-      setFormData({ numero: '', prorrateo: '' });
+      setFormData({ numero: '', prorrateo: '', superficie_m2: '' });
     }
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // 1. Validación básica (incluyendo que el prorrateo sea un número válido)
-    if (!formData.numero || formData.prorrateo === '') {
-      alert("Todos los campos son obligatorios");
-      return;
-    }
+  e.preventDefault();
+  
+  // 1. Validación básica mejorada
+  // Nota: La superficie_m2 puede ser 0 si el usuario prefiere calcularla después, 
+  // pero el número de unidad es obligatorio.
+  if (!formData.numero) {
+    alert("El número de unidad es obligatorio");
+    return;
+  }
 
-    // 2. Preparación del Payload
-    const payload = {
-      // Usamos .trim() para evitar espacios accidentales en el número de unidad
-      numero_unidad: formData.numero.toString().trim(), 
-      prorrateo: parseFloat(formData.prorrateo),
-      comunidad_id: parseInt(id)
+  // 2. Preparación del Payload incluyendo superficie_m2
+  const payload = {
+    numero_unidad: formData.numero.toString().trim(), 
+    // Convertimos a float para asegurar compatibilidad con el Schema de FastAPI
+    prorrateo: parseFloat(formData.prorrateo) || 0,
+    superficie_m2: parseFloat(formData.superficie_m2) || 0, 
+    comunidad_id: parseInt(id)
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = {
+      headers: { Authorization: `Bearer ${token}` }
     };
 
-    try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
-      if (editingPropiedad) {
-        // EDICIÓN
-        await api.put(`/api/propiedades/${editingPropiedad.id}`, payload, config);
-        alert("✅ Propiedad actualizada");
-      } else {
-        // CREACIÓN
-        await api.post('/api/propiedades', payload, config);
-        alert("✅ Propiedad creada");
-      }
-
-      // 3. Post-guardado: Cerrar modal y refrescar la lista con los nuevos datos
-      cerrarModal();
-      cargarPropiedades(); 
-
-    } catch (error) {
-      console.error("Error al guardar:", error);
-      // Extraer mensaje de error del backend si existe
-      const mensajeError = error.response?.data?.detail || "Hubo un error al guardar la propiedad.";
-      alert(` ${mensajeError}`);
+    // 3. Ejecución de la petición según el modo (Edición o Creación)
+    if (editingPropiedad) {
+      // Usamos el payload completo para que el backend reciba la superficie
+      await api.put(`/api/propiedades/${editingPropiedad.id}`, payload, config);
+      // Opcional: Podrías usar un toast o notificación más elegante que el alert
+      console.log("✅ Propiedad actualizada");
+    } else {
+      await api.post('/api/propiedades', payload, config);
+      console.log("✅ Propiedad creada");
     }
-  };
+
+    // 4. Post-guardado: Cerrar modal y refrescar la lista
+    cerrarModal();
+    cargarPropiedades(); 
+
+  } catch (error) {
+    console.error("Error al guardar:", error);
+    
+    // Manejo de errores detallado desde el backend (FastAPI)
+    const mensajeError = error.response?.data?.detail;
+    
+    if (Array.isArray(mensajeError)) {
+      // Si FastAPI devuelve errores de validación (pydantic)
+      alert(`Error de validación: ${mensajeError.map(e => e.msg).join(", ")}`);
+    } else {
+      alert(mensajeError || "Hubo un error al guardar la propiedad.");
+    }
+  }
+};
 
   const handleDelete = async (propiedadId) => {
     if (!window.confirm("¿Estás seguro? Si borras esta propiedad, podrías perder historial asociado si no tienes cuidado.")) {
@@ -150,7 +164,7 @@ const PropiedadesPage = () => {
   const cerrarModal = () => {
     setIsModalOpen(false);
     setEditingPropiedad(null);
-    setFormData({ numero: '', prorrateo: '' });
+    setFormData({ numero: '', prorrateo: '', superficie_m2: '' });
   };
 
   const handleInputChange = (e) => {
@@ -231,6 +245,7 @@ useEffect(() => {
                   <tr>
                     <th className="p-4 font-semibold">Unidad / Depto</th>
                     <th className="p-4 font-semibold text-center">Prorrateo (Coeficiente)</th>
+                    <th className="px-6 py-4 text-center">Superficie (m²)</th> {/* Nueva Columna */}
                     <th className="p-4 font-semibold text-center">Porcentaje Visual</th>
                     <th className="p-4 font-semibold text-center">Acciones</th>
                   </tr>
@@ -291,79 +306,104 @@ useEffect(() => {
       </div>
 
       {/* --- MODAL PREMIUM --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-100 transition-transform">
-            
-            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/80 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                 <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                 {editingPropiedad ? 'Editar Propiedad' : 'Nueva Propiedad'}
-              </h2>
-              <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-200/50">
-                 <X className="w-5 h-5"/>
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+      {/* --- MODAL PREMIUM ADAPTADO --- */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-50 backdrop-blur-sm animate-fade-in px-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-100 transition-transform">
               
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Número de Unidad / Depto</label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Home className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input 
-                      name="numero"
-                      type="text" required autoFocus
-                      placeholder="Ej: 101, Casa 5..."
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                      value={formData.numero}
-                      onChange={handleInputChange}
-                    />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Prorrateo (Decimal)</label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Percent className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <input 
-                      name="prorrateo"
-                      type="number" step="0.000001" required
-                      placeholder="Ej: 0.025"
-                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-bold font-mono text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                      value={formData.prorrateo}
-                      onChange={handleInputChange}
-                    />
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1 font-medium">
-                  Ingresa el valor en decimales. Ej: <strong className="text-gray-700">0.05</strong> equivale al <strong className="text-gray-700">5%</strong>.
-                </p>
-              </div>
-
-              <div className="pt-4 flex gap-3 border-t border-gray-100">
-                <button 
-                  type="button" 
-                  onClick={cerrarModal} 
-                  className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 shadow-md shadow-gray-900/20 transition-all active:scale-95"
-                >
-                  {editingPropiedad ? 'Guardar Cambios' : 'Crear Propiedad'}
+              <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/80 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    {editingPropiedad ? 'Editar Propiedad' : 'Nueva Propiedad'}
+                </h2>
+                <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-lg hover:bg-gray-200/50">
+                    <X className="w-5 h-5"/>
                 </button>
               </div>
+              
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                
+                {/* NÚMERO DE UNIDAD */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Número de Unidad / Depto</label>
+                  <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Home className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input 
+                        name="numero"
+                        type="text" required autoFocus
+                        placeholder="Ej: 101, Casa 5..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                        value={formData.numero}
+                        onChange={handleInputChange}
+                      />
+                  </div>
+                </div>
 
-            </form>
+                {/* NUEVO: SUPERFICIE (M2) */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Superficie Útil (m²)</label>
+                  <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Ruler className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input 
+                        name="superficie_m2"
+                        type="number" step="0.01"
+                        placeholder="Ej: 54.25"
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-bold font-mono text-gray-900 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                        value={formData.superficie_m2}
+                        onChange={handleInputChange}
+                      />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 italic">
+                    * Se usará para el cálculo automático del prorrateo.
+                  </p>
+                </div>
+
+                {/* PRORRATEO (MANUAL) */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Prorrateo Actual (Decimal)</label>
+                  <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Percent className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input 
+                        name="prorrateo"
+                        type="number" step="0.000001" required
+                        placeholder="Ej: 0.025"
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-bold font-mono text-gray-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                        value={formData.prorrateo}
+                        onChange={handleInputChange}
+                      />
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1 font-medium leading-tight">
+                    Puedes ingresarlo manual o dejar que el sistema lo calcule desde la <strong className="text-indigo-600">Configuración</strong>.
+                  </p>
+                </div>
+
+                {/* BOTONES */}
+                <div className="pt-4 flex gap-3 border-t border-gray-100">
+                  <button 
+                    type="button" 
+                    onClick={cerrarModal} 
+                    className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 shadow-md shadow-gray-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    {editingPropiedad ? 'Guardar Cambios' : 'Crear Propiedad'}
+                  </button>
+                </div>
+
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

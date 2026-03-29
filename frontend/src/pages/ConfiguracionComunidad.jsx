@@ -30,16 +30,17 @@ const ConfiguracionComunidad = () => {
   }, [id]);
 
   const handleSave = async () => {
-    setGuardando(true);
-    try {
-      await api.put(`/api/comunidades/${id}`, comunidad);
-      alert("Configuración actualizada correctamente");
+  setGuardando(true);
+  try {
+        // Enviamos el objeto comunidad que ya tiene superficie_total_m2 y fondo_reserva_porcentaje
+        await api.put(`/api/comunidades/${id}`, comunidad);
+        alert("¡Configuración guardada!");
     } catch (error) {
-      alert("Error al guardar los cambios");
+        alert("Error al guardar: " + error.response?.data?.detail);
     } finally {
-      setGuardando(false);
-    }
-  };
+        setGuardando(false);
+  }
+};
 
   const recalcularProrrateos = async () => {
     if (!window.confirm("¿Estás seguro? Esto sobrescribirá el prorrateo de todas las unidades basado en sus m2 actuales.")) return;
